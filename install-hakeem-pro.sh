@@ -1,39 +1,30 @@
 #!/bin/bash
-# ==========================================
-# 🔧 HAKEEM PRO INSTALLER
-# ==========================================
-
-echo ""
 echo "========================================"
-echo "     H A K E E M   P R O   S E T U P"
+echo "     H A K E E M   F I X E D   S E T U P"
 echo "========================================"
-
 echo ""
-echo "📦 Installing dependencies..."
+echo "📦 تثبيت المتطلبات..."
 pkg update -y
-pkg install exiftool python termux-api -y
-pip install requests
-
+pkg install exiftool python -y
+pip install requests 2>/dev/null
 echo ""
-echo "📁 Creating workspace..."
-mkdir -p ~/Hakeem-Data/{pages,logs,captured}
-
+echo "📁 إنشاء مجلدات العمل..."
+mkdir -p ~/Hakeem-Reports ~/Hakeem-Backups ~/Hakeem-Pages
 echo ""
-echo "🔧 Setting up tools..."
-chmod +x Hakeem-Forensic-Pro.sh
-
+echo "🔧 إعداد الملفات..."
+chmod +x Hakeem-Forensic-Pro-Fixed.sh
 echo ""
-echo "✅ Installation complete!"
+echo "✅ اكتمل التثبيت!"
 echo ""
-echo "🚀 To start:"
-echo "   ./Hakeem-Forensic-Pro.sh"
+echo "🚀 للتشغيل:"
+echo "   ./Hakeem-Forensic-Pro-Fixed.sh"
 echo ""
-echo "✨ Features:"
-echo "   • 3 Educational Web Pages"
-echo "   • Live Data Logging to Terminal"
-echo "   • Image Forensics Tools"
-echo "   • Auto-browser opening"
+echo "✨ المميزات المصححة:"
+echo "   • ✅ إنشاء ملف HTML في /sdcard/Download"
+echo "   • ✅ عرض البيانات في الترمكس مباشرة"
+echo "   • ✅ صفحات ويب تعليمية مع تسجيل بيانات"
+echo "   • ✅ تصميم عربي احترافي"
 echo ""
-echo "👑 Developer: Hakeem"
+echo "👑 المطور: حكيم العرب"
 echo "🌐 GitHub: hakim738-html"
 echo "========================================"
