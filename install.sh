@@ -1,75 +1,56 @@
 #!/bin/bash
 # ==========================================
-# 🔥 HAKEEM Forensic & Pentest Tool v6.0
-# 👨‍💻 Developer: Hakeem
+# 🔥 HAKEEM Security Suite Installer v7.0
+# 👨‍💻 One-Command Installation
 # ==========================================
 
 echo ""
 echo "========================================"
-echo "     HAKEEM Forensic Tool Installer"
-echo "========================================"
-echo "📦 Installing all dependencies..."
+echo "     HAKEEM Security Suite Installer"
 echo "========================================"
 
-# Update system
-echo "[1/8] Updating package lists..."
+echo ""
+echo "📦 Step 1: Updating system..."
 pkg update -y
 
-# Install forensic tools
-echo "[2/8] Installing forensic tools..."
+echo ""
+echo "🔧 Step 2: Installing core tools..."
 pkg install exiftool -y        # Metadata analysis
+pkg install steghide -y        # Steganography
 pkg install imagemagick -y     # Image processing
-
-# Install steganography tools
-echo "[3/8] Installing steganography tools..."
-pkg install steghide -y        # Hide/extract files
-pkg install binwalk -y         # File analysis
-
-# Install network tools
-echo "[4/8] Installing network tools..."
-pkg install curl -y            # Web requests
-pkg install wget -y            # File downloads
-pkg install netcat -y          # Networking tool
-
-# Install development tools
-echo "[5/8] Installing development tools..."
 pkg install python -y          # Python 3
 pkg install git -y             # Version control
-pkg install nano -y            # Text editor
 
-# Install Python modules
-echo "[6/8] Installing Python modules..."
-pip install requests           # HTTP requests
-pip install flask              # Web framework (for phishing)
+echo ""
+echo "🐍 Step 3: Installing Python modules..."
+pip install requests           # HTTP library
 
-# Create directory structure
-echo "[7/8] Creating directory structure..."
-mkdir -p ~/HAKEEM-Tool/{reports,backups,clean_output,stego_files,extracted_files,phishing_pages,logs}
+echo ""
+echo "📁 Step 4: Creating directory structure..."
+mkdir -p reports backups clean_output stego_files extracted_files phishing_pages captured_data
 
-# Set permissions
-echo "[8/8] Setting permissions..."
-chmod +x *.sh 2>/dev/null
+echo ""
+echo "🔒 Step 5: Setting permissions..."
+chmod +x HAKEEM.sh
 
-# Completion message
 echo ""
 echo "========================================"
 echo "     ✅ INSTALLATION COMPLETE!"
 echo "========================================"
 echo ""
-echo "🚀 To start HAKEEM Tool:"
+echo "🚀 To start HAKEEM Security Suite:"
+echo ""
 echo "   chmod +x HAKEEM.sh"
 echo "   ./HAKEEM.sh"
 echo ""
-echo "✨ NEW FEATURES IN v6.0:"
-echo "   • 📧 Facebook phishing page generator"
-echo "   • 🔗 Local phishing server setup"
-echo "   • 📊 Credential logging system"
-echo "   • 🕵️ Advanced steganography"
-echo "   • 💣 Metadata manipulation"
+echo "✨ All-in-One Features:"
+echo "   • 📸 Image forensics & metadata analysis"
+echo "   • 🕵️ File hiding & extraction (steganography)"
+echo "   • 🌐 Educational web testing pages"
+echo "   • 💣 Advanced security tools"
 echo ""
-echo "⚠️  LEGAL DISCLAIMER:"
-echo "   Use only for authorized penetration testing"
-echo "   and educational purposes with explicit permission."
+echo "⚠️  LEGAL NOTE: Use only for authorized"
+echo "    testing and educational purposes."
 echo ""
 echo "👨‍💻 Developer: Hakeem"
 echo "🌐 GitHub: github.com/hakim738-html"
