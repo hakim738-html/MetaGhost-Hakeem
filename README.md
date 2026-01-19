@@ -1,27 +1,34 @@
-# 🔥 أداة HAKEEM للطب الشرعي
+# 🔥 HAKEEM Ultimate Security Suite v7.0
 
-أداة متقدمة لتحليل وإزالة البيانات الوصفية (Metadata) من الصور.
+**All-in-One Security Toolkit: Forensics + Steganography + Web Testing**
 
-## ✨ المميزات
-- 📊 **تحليل عميق** مع تقارير HTML مفصلة
-- 📍 **كشف إحداثيات GPS** وعرضها على الخرائط
-- 🛡️ **تنظيف آمن** مع نسخ احتياطي تلقائي
-- 📱 **مناسبة للهواتف** (تعمل على Termux)
-- 🎨 **واجهة ملونة** وسهلة الاستخدام
+![Version](https://img.shields.io/badge/Version-7.0_Complete-blue)
+![Platform](https://img.shields.io/badge/Platform-Termux%2FLinux-green)
+![License](https://img.shields.io/badge/License-MIT-orange)
 
-## 🚀 التثبيت السريع
+## ⚠️ LEGAL DISCLAIMER
+
+> **FOR EDUCATIONAL PURPOSES ONLY**
+> 
+> This tool is designed for:
+> - Cybersecurity education and training
+> - Authorized penetration testing
+> - Personal security awareness
+> 
+> **NEVER use on systems without explicit permission**
+
+## 🚀 QUICK START
+
 ```bash
-# تنزيل الأداة
+# 1. Clone the repository
 git clone https://github.com/hakim738-html/MetaGhost-Hakeem
 
-# الدخول للمجلد
+# 2. Enter directory
 cd MetaGhost-Hakeem
 
-# جعلها قابلة للتنفيذ
-chmod +x HAKEEM.sh install.sh
-
-# تشغيل المثبِّت (اختياري)
+# 3. Run installer
+chmod +x install.sh
 ./install.sh
 
-# تشغيل الأداة
+# 4. Start the tool
 ./HAKEEM.sh
