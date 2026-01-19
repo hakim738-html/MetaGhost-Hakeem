@@ -1,8 +1,17 @@
-# 🔥 أداة حكيم لتحليل الصور وإخفاء البيانات
+<div align="center">
 
-## ⚡ **التثبيت بأمر واحد:**
+# 🔥 أداة حكيم للطب الشرعي الرقمي وتخبئة البيانات
 
+### 👑 **المطور: حكيم العرب**
+### 🌐 **GitHub:** hakim738-html
+### 🎯 **الإصدار:** v6.0
+
+</div>
+
+---
+
+## 🚀 **أوامر التثبيت والتشغيل**
+
+### **1. الذهاب للمجلد الشخصي**
 ```bash
-cd $HOME && rm -rf MetaGhost-Hakeem && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git && cd MetaGhost-Hakeem && chmod +x install-hakeem-stego.sh && ./install-hakeem-stego.sh
-```bash
-./hakeem-stego.sh
+cd $HOME
