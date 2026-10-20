@@ -7,7 +7,7 @@
 
 ### 👑 المطوّر: حكيم العرب — Hakeem Al-Arab
 ### 🌐 GitHub: [hakim738-html](https://github.com/hakim738-html)
-### 🎯 الإصدار: v6.3 • 💻 Termux (Android) • Linux
+### 🎯 الإصدار: v6.4 • 💻 Termux (Android) • Linux
 
 <br>
 
@@ -17,7 +17,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-6.3-blue?style=flat-square)](https://github.com/hakim738-html/MetaGhost-Hakeem)
+[![Version](https://img.shields.io/badge/version-6.4-blue?style=flat-square)](https://github.com/hakim738-html/MetaGhost-Hakeem)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Termux%20%7C%20Linux-orange?style=flat-square)]()
 [![Language](https://img.shields.io/badge/lang-AR%20%7C%20EN-purple?style=flat-square)]()
@@ -29,12 +29,12 @@
 <a id="-التثبيت-والتشغيل--install--run"></a>
 ## ⚡ التثبيت والتشغيل السريع — Quick Install & Run
 
-### 🐧 التثبيت (Termux) — أمر واحد مُصحّح:
+### 🐧 التثبيت (Termux) — أمر واحد شامل:
 ```bash
-pkg update -y && pkg install -y git python python-pillow exiftool file binutils findutils coreutils && termux-setup-storage && cd $HOME && rm -rf MetaGhost-Hakeem 2>/dev/null && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git && cd MetaGhost-Hakeem && chmod +x install-hakeem-stego.sh hakeem-stego.sh && ./install-hakeem-stego.sh
+pkg update -y && pkg install -y git python python-pillow exiftool file binutils findutils coreutils && pip install arabic-reshaper python-bidi --break-system-packages && termux-setup-storage && cd $HOME && rm -rf MetaGhost-Hakeem 2>/dev/null && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git && cd MetaGhost-Hakeem && chmod +x install-hakeem-stego.sh hakeem-stego.sh && ./install-hakeem-stego.sh
 ```
 
-> ✅ **تم استبدال `pip install pillow` بـ `pkg install python-pillow`** — لأن Pillow لا يوفر wheels جاهزة لـ android-24-arm64 مع Python 3.14، فيفشل البناء من المصدر بسبب نقص `libjpeg`. حزمة Termux الرسمية تحل المشكلة فوراً.
+> ✅ **تمت إضافة `pip install arabic-reshaper python-bidi`** — لحل مشكلة الحروف العربية المبعثرة والمقلوبة في طرفية Termux، بحيث تظهر متصلة وبالاتجاه الصحيح (من اليمين لليسار).
 
 ### ▶️ التشغيل:
 ```bash
@@ -94,45 +94,6 @@ printf 'ar' > ~/.hakeem_lang   # العربية
 
 ---
 
-## 🚨 حل مشكلة تثبيت Pillow (مهم!)
-
-### ❌ المشكلة:
-```
-ERROR: Failed building wheel for pillow
-RequiredDependencyException: jpeg
-The headers or library files could not be found for jpeg
-```
-
-**السبب:** `pip install pillow` لا يجد wheels جاهزة لـ `android-24-arm64` مع Python 3.14، فيحاول البناء من المصدر ويفشل لعدم وجود `libjpeg`.
-
-### ✅ الحل النهائي:
-```bash
-pkg install -y python-pillow
-python3 -c "from PIL import Image; print('✅ Pillow OK:', Image.__version__)"
-```
-
-### 🔧 إذا استمر الفشل (خطة بديلة):
-```bash
-# 1. ثبت مكتبات التطوير
-pkg install -y libjpeg-turbo libpng zlib libtiff libwebp
-
-# 2. ثبت Pillow
-pkg install -y python-pillow
-
-# 3. تحقق
-python3 -c "from PIL import Image; print('OK')"
-```
-
-### 📊 مقارنة سريعة:
-
-| الطريقة | النتيجة | الوقت |
-|---|---|---|
-| `pip install pillow` | ❌ فشل | — |
-| `pip install pillow` + libjpeg | ⚠️ قد ينجح | 10-15 دقيقة |
-| **`pkg install python-pillow`** | ✅ **نجاح فوري** | **10 ثوانٍ** |
-
----
-
 ## 🚀 التثبيت المفصّل — كل أمر مع شرحه
 
 ### 📥 الخطوة 1: تحديث النظام
@@ -148,21 +109,24 @@ pkg install -y git python python-pillow exiftool file binutils findutils coreuti
 > **الشرح:**
 > - `git`: استنساخ الكود من GitHub.
 > - `python`: لتشغيل وحدة LSB.
-> - **`python-pillow`**: مكتبة الصور — **حزمة Termux الرسمية** (بدل pip).
+> - `python-pillow`: مكتبة الصور (بديل مثبت مسبقاً لـ pip).
 > - `exiftool`: لقراءة الميتاداتا.
 > - `file`, `binutils`, `findutils`, `coreutils`: أدوات مساعدة.
 
-### 📥 الخطوة 3: التحقق من Pillow
+### 📥 الخطوة 3: 🆕 تثبيت مكتبات دعم اللغة العربية
 ```bash
-python3 -c "from PIL import Image; print('Pillow version:', Image.__version__)"
+pip install arabic-reshaper python-bidi --break-system-packages
 ```
-> **المتوقع:** `Pillow version: 11.x.x` أو أعلى.
+> **الشرح:**
+> - `arabic-reshaper`: يربط الحروف العربية ببعضها (م ب ع ث ر ة ← مبعثرة).
+> - `python-bidi`: يعكس اتجاه النص ليطبعه من اليمين إلى اليسار (RTL).
+> - **بدون هاتين المكتبتين:** ستظهر القوائم العربية في الطرفية مقطّعة ومعكوسة. **لا تؤثر على تقارير HTML** لأن المتصفح يدعم العربية أصلاً.
 
 ### 📥 الخطوة 4: منح صلاحية التخزين
 ```bash
 termux-setup-storage
 ```
-> **الشرح:** يطلب إذن الوصول إلى `/sdcard`. اضغط "السماح".
+> **الشرح:** يطلب إذن الوصول إلى `/sdcard` لقراءة الصور. اضغط "السماح".
 
 ### 📥 الخطوة 5: استنساخ الأداة
 ```bash
@@ -188,73 +152,53 @@ chmod +x install-hakeem-stego.sh hakeem-stego.sh
 
 ---
 
-## 🐧 للمستخدمين على Linux (Ubuntu/Debian)
+## 🔤 كيف تحل الأداة مشكلة الحروف العربية؟
 
-الأمر السابق يستخدم `pkg` (خاص بـ Termux). على Linux استبدله بـ `apt`:
+| المشكلة | الحل المدمج في الأداة |
+|---|---|
+| الحروف مقطّعة (`م ب ع ث ر ة`) | مكتبة `arabic-reshaper` تربطها (`مبعثرة`) |
+| النص معكوس (`ة ر ث ع ب م`) | مكتبة `python-bidi` تعكس الاتجاه (RTL) |
+| الأرقام العربية تُسبب "الملف غير موجود" | الأداة تحوّل `٢٠٢٦` تلقائياً إلى `2026` |
+| تقرير التحليل | يُحفظ كـ **HTML** في Downloads (المتصفح يعرض العربية بشكل مثالي 100%) |
+
+---
+
+## 🐧 للمستخدمين على Linux (Ubuntu/Debian)
 
 ```bash
 # 1. المتطلبات
 sudo apt update
-sudo apt install -y git python3 python3-pil python3-pil.imagetk libimage-exiftool-perl file binutils findutils coreutils
+sudo apt install -y git python3 python3-pil python3-pip libimage-exiftool-perl file binutils findutils coreutils
 
-# 2. استنساخ
+# 2. مكتبة اللغة العربية
+pip3 install arabic-reshaper python-bidi --break-system-packages
+
+# 3. استنساخ وتشغيل
 cd $HOME && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git
 cd MetaGhost-Hakeem && chmod +x *.sh
-
-# 3. التثبيت والتشغيل
 ./install-hakeem-stego.sh
 ./hakeem-stego.sh
 ```
-
-> **ملاحظة:** على Linux، Pillow متوفر كـ `python3-pil` من apt — أسرع وأكثر استقراراً من pip.
-
----
-
-## 🌍 تبديل اللغة — Language Switch
-
-### الطريقة 1: من داخل الأداة
-```
-القائمة → [6] تغيير اللغة → اختر 1 أو 2
-```
-
-### الطريقة 2: بأمر مباشر
-```bash
-# إلى الإنجليزية
-printf 'en' > ~/.hakeem_lang
-
-# إلى العربية
-printf 'ar' > ~/.hakeem_lang
-```
-
-### 🐞 إصلاح مشكلة "الإنجليزية لا تظهر"
-```bash
-rm -f ~/.hakeem_lang
-printf 'en' > ~/.hakeem_lang
-cat ~/.hakeem_lang    # يجب أن يطبع: en (بدون سطر فارغ)
-./hakeem-stego.sh
-```
-> **السبب:** الملف القديم قد يحتوي `en\n` (سطر جديد) فيفشل شرط المقارنة. **تم إصلاحه جذرياً في v6.3** عبر `tr -d '[:space:]'` داخل السكربت.
 
 ---
 
 ## ✅ التحقق من نجاح التثبيت
 
 ```bash
-# فحص الأدوات
+# 1. الأدوات الأساسية
 which git python3 exiftool file
-# المتوقع: مسارات /data/data/com.termux/files/usr/bin/...
 
-# فحص Pillow
+# 2. Pillow
 python3 -c "from PIL import Image; print('Pillow OK:', Image.__version__)"
-# المتوقع: Pillow OK: 11.x.x
 
-# فحص إصدار exiftool
-exiftool -ver
-# المتوقع: 13.xx
+# 3. 🆕 دعم العربية
+python3 -c "import arabic_reshaper; from bidi.algorithm import get_display; print('Arabic support OK')"
+```
 
-# فحص المجلدات
-ls -la ~/Hakeem-Stego/
-# المتوقع: stego-images, reports, backups, logs, hidden-files
+المتوقع:
+```
+Pillow OK: 11.x.x
+Arabic support OK
 ```
 
 ---
@@ -265,7 +209,7 @@ ls -la ~/Hakeem-Stego/
 |---|---|
 | **إخفاء رسالة** | القائمة → [1] → مسار الصورة → النص → اسم المخرج |
 | **استخراج رسالة** | القائمة → [2] → مسار الصورة الملغّمة |
-| **تحليل صورة** | القائمة → [3] → مسار الصورة → يظهر GPS والطراز والتاريخ + تقرير HTML في Downloads |
+| **تحليل صورة** | القائمة → [3] → مسار الصورة → تقرير HTML في Downloads |
 | **تحليل جنائي** | القائمة → [4] → مسار الصورة → تقرير كامل + HTML |
 
 ---
@@ -275,20 +219,17 @@ ls -la ~/Hakeem-Stego/
 **❓ فشل `pip install pillow` — ماذا أفعل؟**
 > استخدم `pkg install python-pillow` بدلاً منه. هذه هي الطريقة الصحيحة على Termux.
 
+**❓ الحروف العربية ما زالت مقطّعة؟**
+> تأكد من تثبيت `arabic-reshaper` و `python-bidi` بالأمر: `pip install arabic-reshaper python-bidi --break-system-packages`. وإذا لم تُحل المشكلة، استخدم تقرير HTML (يعرض العربية بشكل مثالي).
+
 **❓ هل تعمل على أندرويد فقط؟**
-> لا، تعمل على Linux أيضاً. استبدل `pkg` بـ `apt` واستخدم `python3-pil` بدل `python-pillow`.
-
-**❓ هل الصورة تفقد جودتها؟**
-> لا. LSB يغيّر بتاً واحداً في كل قناة لونية. لكن **الإخراج يجب أن يكون PNG**.
-
-**❓ ما أقصى حجم يمكن إخفاؤه؟**
-> ~10% من حجم الصورة. صورة 1MB تخفي ~100KB.
+> لا، تعمل على Linux أيضاً (استبدل `pkg` بـ `apt`).
 
 **❓ لماذا لا تظهر ميتاداتا واتساب؟**
 > واتساب يحذفها عند الإرسال كـ "صورة". اطلب إرسالها كـ **"مستند"**.
 
-**❓ تحذير `No mirror selected` — هل يسبب مشكلة؟**
-> لا، مجرد تحذير. لتثبيت مرآة: `termux-change-repo` → اختر Grimler → OK.
+**❓ ما أقصى حجم يمكن إخفاؤه؟**
+> ~10% من حجم الصورة. صورة 1MB تخفي ~100KB.
 
 ---
 
@@ -323,34 +264,11 @@ Extract **GPS location, device make/model, capture date, resolution, editing sof
 
 ---
 
-## 🚨 Pillow Installation Fix (Important!)
-
-### ❌ Problem:
-```
-ERROR: Failed building wheel for pillow
-RequiredDependencyException: jpeg
-```
-
-**Cause:** `pip install pillow` has no prebuilt wheel for `android-24-arm64` with Python 3.14, so it tries to compile from source and fails due to missing `libjpeg`.
-
-### ✅ Solution:
-```bash
-pkg install -y python-pillow
-python3 -c "from PIL import Image; print('✅ Pillow OK:', Image.__version__)"
-```
-
-### 🐧 On Linux (Ubuntu/Debian):
-```bash
-sudo apt install -y python3-pil python3-pil.imagetk
-```
-
----
-
-## 🚀 Quick Install (Fixed)
+## 🚀 Quick Install (Fixed & Complete)
 
 ### Termux:
 ```bash
-pkg update -y && pkg install -y git python python-pillow exiftool file binutils findutils coreutils && termux-setup-storage && cd $HOME && rm -rf MetaGhost-Hakeem 2>/dev/null && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git && cd MetaGhost-Hakeem && chmod +x install-hakeem-stego.sh hakeem-stego.sh && ./install-hakeem-stego.sh
+pkg update -y && pkg install -y git python python-pillow exiftool file binutils findutils coreutils && pip install arabic-reshaper python-bidi --break-system-packages && termux-setup-storage && cd $HOME && rm -rf MetaGhost-Hakeem 2>/dev/null && git clone https://github.com/hakim738-html/MetaGhost-Hakeem.git && cd MetaGhost-Hakeem && chmod +x install-hakeem-stego.sh hakeem-stego.sh && ./install-hakeem-stego.sh
 ```
 
 ### Run:
@@ -365,8 +283,7 @@ cd ~/MetaGhost-Hakeem && ./hakeem-stego.sh
 ```bash
 which git python3 exiftool file
 python3 -c "from PIL import Image; print('Pillow OK:', Image.__version__)"
-exiftool -ver
-ls -la ~/Hakeem-Stego/
+python3 -c "import arabic_reshaper; from bidi.algorithm import get_display; print('Arabic support OK')"
 ```
 
 ---
@@ -387,11 +304,11 @@ ls -la ~/Hakeem-Stego/
 **❓ `pip install pillow` failed — what to do?**
 > Use `pkg install python-pillow` instead. This is the correct way on Termux.
 
+**❓ Arabic letters still disconnected?**
+> Ensure `arabic-reshaper` and `python-bidi` are installed. If the issue persists, use the HTML report (perfect Arabic display).
+
 **❓ Linux compatibility?**
 > Yes. Replace `pkg` with `apt` and use `python3-pil` instead of `python-pillow`.
-
-**❓ Loss of image quality?**
-> No. LSB changes only one bit per channel. Output must be PNG.
 
 **❓ Max hiding capacity?**
 > ~10% of image size.
