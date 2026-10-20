@@ -2,10 +2,12 @@
 # ===================================================
 # 🔥 H A K E E M   S T E G A N O G R A P H Y   T O O L
 # 👑 DEVELOPER: Hakeem Al-Arab
-# 🎯 VERSION: 6.0 - Image Steganography & Forensics
+# 🎯 VERSION: 6.1 - Image Steganography & Forensics
+# 🌐 GITHUB: hakim738-html
+# 🌍 Languages: العربية / English
 # ===================================================
 
-# Colors for terminal
+# === COLORS ===
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -15,19 +17,120 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# Directories
+# === LANGUAGE PERSISTENCE ===
+LANG_FILE="$HOME/.hakeem_lang"
+LANG_CHOICE="ar"
+[ -f "$LANG_FILE" ] && LANG_CHOICE=$(cat "$LANG_FILE")
+
+# === MESSAGES (AR / EN) ===
+declare -A MSG_AR MSG_EN
+
+MSG_AR=(
+    [developer]="المطوّر: حكيم العرب"
+    [version]="الإصدار"
+    [menu_title]="القائمة الرئيسية"
+    [menu_hide]="إخفاء نص في صورة"
+    [menu_extract]="استخراج نص مخفي من صورة"
+    [menu_exif]="تحليل بيانات الصورة (EXIF)"
+    [menu_forensic]="تحليل جنائي شامل"
+    [menu_logs]="عرض السجلات"
+    [menu_lang]="تغيير اللغة (Change Language)"
+    [menu_exit]="خروج"
+    [prompt_choice]="اختر رقم العملية"
+    [prompt_image]="أدخل مسار الصورة"
+    [prompt_text]="أدخل النص المراد إخفاؤه"
+    [prompt_output]="أدخل اسم الصورة الناتجة (بدون امتداد)"
+    [invalid_choice]="اختيار غير صالح"
+    [file_not_found]="الملف غير موجود"
+    [processing]="جاري المعالجة..."
+    [success_hide]="تم إخفاء النص بنجاح"
+    [success_extract]="تم استخراج النص بنجاح"
+    [error]="خطأ"
+    [press_enter]="اضغط Enter للمتابعة"
+    [checking_tools]="فحص الأدوات المطلوبة"
+    [tool_found]="موجودة"
+    [tool_missing]="غير موجودة"
+    [tool_installing]="جاري تثبيت"
+    [install_deps]="تثبيت المتطلبات الناقصة"
+    [backup_created]="تم إنشاء نسخة احتياطية"
+    [report_saved]="تم حفظ التقرير في"
+    [no_hidden_text]="لا يوجد نص مخفي في هذه الصورة"
+    [capacity_error]="حجم الصورة غير كافٍ لإخفاء هذا النص"
+    [lang_prompt]="اختر اللغة / Select Language"
+    [lang_set]="تم تعيين اللغة"
+    [logs_empty]="لا توجد سجلات بعد"
+    [goodbye]="إلى اللقاء 👋"
+)
+
+MSG_EN=(
+    [developer]="Developer: Hakeem Al-Arab"
+    [version]="Version"
+    [menu_title]="Main Menu"
+    [menu_hide]="Hide text in image"
+    [menu_extract]="Extract hidden text from image"
+    [menu_exif]="Analyze image metadata (EXIF)"
+    [menu_forensic]="Full forensic analysis"
+    [menu_logs]="View logs"
+    [menu_lang]="Change language (تغيير اللغة)"
+    [menu_exit]="Exit"
+    [prompt_choice]="Enter operation number"
+    [prompt_image]="Enter image path"
+    [prompt_text]="Enter text to hide"
+    [prompt_output]="Enter output image name (without extension)"
+    [invalid_choice]="Invalid choice"
+    [file_not_found]="File not found"
+    [processing]="Processing..."
+    [success_hide]="Text hidden successfully"
+    [success_extract]="Text extracted successfully"
+    [error]="Error"
+    [press_enter]="Press Enter to continue"
+    [checking_tools]="Checking required tools"
+    [tool_found]="found"
+    [tool_missing]="missing"
+    [tool_installing]="Installing"
+    [install_deps]="Installing missing dependencies"
+    [backup_created]="Backup created"
+    [report_saved]="Report saved to"
+    [no_hidden_text]="No hidden text found in this image"
+    [capacity_error]="Image is too small to hide this text"
+    [lang_prompt]="Select Language / اختر اللغة"
+    [lang_set]="Language set to"
+    [logs_empty]="No logs yet"
+    [goodbye]="Goodbye 👋"
+)
+
+msg() {
+    local key="$1"
+    if [ "$LANG_CHOICE" = "ar" ]; then
+        echo "${MSG_AR[$key]}"
+    else
+        echo "${MSG_EN[$key]}"
+    fi
+}
+
+# === DIRECTORIES ===
 BASE_DIR="$HOME/Hakeem-Stego"
 STEGO_DIR="$BASE_DIR/stego-images"
 REPORTS_DIR="$BASE_DIR/reports"
-HIDDEN_DIR="$BASE_DIR/hidden-files"
+BACKUP_DIR="$BASE_DIR/backups"
 LOGS_DIR="$BASE_DIR/logs"
+LOG_FILE="$LOGS_DIR/hakeem.log"
 
-# Create directories
-mkdir -p "$STEGO_DIR" "$REPORTS_DIR" "$HIDDEN_DIR" "$LOGS_DIR"
+mkdir -p "$STEGO_DIR" "$REPORTS_DIR" "$BACKUP_DIR" "$LOGS_DIR"
 
-# ===================================================
-# 🎯 DISPLAY BANNER
-# ===================================================
+# === HELPERS ===
+log_action() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+}
+
+expand_path() {
+    local p="$1"
+    p="${p/#\~/$HOME}"
+    p="${p/#\$HOME/$HOME}"
+    echo "$p"
+}
+
+# === BANNER ===
 show_banner() {
     clear
     echo -e "${RED}"
@@ -45,891 +148,326 @@ show_banner() {
     echo "╚══════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     echo -e "${CYAN}┌────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│   👑 DEVELOPER: Hakeem Al-Arab                     │${NC}"
-    echo -e "${CYAN}│   🌐 GITHUB: hakim738-html                         │${NC}"
-    echo -e "${CYAN}│   🎯 VERSION: 6.0 - Professional Edition           │${NC}"
+    echo -e "${CYAN}│   👑 $(msg developer)"
+    echo -e "${CYAN}│   🌐 GITHUB: hakim738-html"
+    echo -e "${CYAN}│   🎯 $(msg version): 6.1 - Professional Edition"
+    echo -e "${CYAN}│   🌍 Lang: $LANG_CHOICE"
     echo -e "${CYAN}└────────────────────────────────────────────────────┘${NC}"
     echo ""
 }
 
-# ===================================================
-# 🔍 CHECK AND INSTALL REQUIRED TOOLS
-# ===================================================
+# === TOOL CHECK ===
 check_tools() {
-    echo -e "${CYAN}[*] Checking required tools...${NC}"
-    
+    echo -e "${CYAN}[*] $(msg checking_tools)...${NC}"
     local missing=()
-    
-    # Check for exiftool
-    if ! command -v exiftool &> /dev/null; then
-        missing+=("exiftool")
-        echo -e "${YELLOW}[!] ExifTool not found${NC}"
-    else
-        echo -e "${GREEN}[✓] ExifTool is installed${NC}"
-    fi
-    
-    # Check for steghide for steganography
-    if ! command -v steghide &> /dev/null; then
-        missing+=("steghide")
-        echo -e "${YELLOW}[!] Steghide not found${NC}"
-    else
-        echo -e "${GREEN}[✓] Steghide is installed${NC}"
-    fi
-    
-    # Check for strings command
-    if ! command -v strings &> /dev/null; then
-        echo -e "${YELLOW}[!] Strings command not found${NC}"
-    else
-        echo -e "${GREEN}[✓] Strings command is available${NC}"
-    fi
-    
-    # Install missing tools
-    if [ ${#missing[@]} -gt 0 ]; then
-        echo -e "${YELLOW}[!] Installing missing tools...${NC}"
-        pkg update -y
-        for tool in "${missing[@]}"; do
-            echo -e "${BLUE}[*] Installing $tool...${NC}"
-            pkg install "$tool" -y
-        done
-    fi
-    
-    echo -e "${GREEN}[✓] All tools are ready!${NC}"
-}
 
-# ===================================================
-# 📸 HIDE TEXT FILE IN IMAGE (STEGANOGRAPHY)
-# ===================================================
-hide_file_in_image() {
-    echo -e "${CYAN}[*] HIDE TEXT FILE IN IMAGE${NC}"
-    echo -e "${BLUE}────────────────────────────────────${NC}"
-    
-    # Get image path
-    echo -e "${YELLOW}[?] Enter image path: ${NC}"
-    echo -e "${WHITE}    Example: /sdcard/Download/photo.jpg${NC}"
-    echo -ne "${GREEN}[>] ${NC}"
-    read image_path
-    
-    if [ ! -f "$image_path" ]; then
-        echo -e "${RED}[X] Error: Image not found!${NC}"
-        return 1
-    fi
-    
-    # Get text to hide
-    echo -e "${YELLOW}[?] Enter text to hide (or press Enter to create file): ${NC}"
-    echo -ne "${GREEN}[>] ${NC}"
-    read hidden_text
-    
-    if [ -z "$hidden_text" ]; then
-        # Create a text file with information
-        timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-        hidden_text="=== HIDDEN DATA - HAKEEM STEGO TOOL ===
-Date Created: $timestamp
-Created By: Hakeem Al-Arab
-Tool: Hakeem Steganography Tool v6.0
-GitHub: hakim738-html
-
-[SYSTEM INFORMATION]
-Device: $(uname -o) $(uname -m)
-Date: $(date)
-User: $USER
-IP Info: Check network settings
-
-[SECRET MESSAGE]
-This is a hidden message embedded in the image.
-Only someone with the right tool can extract it.
-
-[END OF HIDDEN DATA]"
-    fi
-    
-    # Create hidden text file
-    timestamp=$(date +"%Y%m%d_%H%M%S")
-    hidden_file="$HIDDEN_DIR/hidden_data_$timestamp.txt"
-    echo "$hidden_text" > "$hidden_file"
-    
-    # Create stego image
-    stego_image="$STEGO_DIR/stego_$(basename "$image_path")"
-    cp "$image_path" "$stego_image"
-    
-    echo -e "${YELLOW}[*] Embedding data into image...${NC}"
-    
-    # Use steghide to hide the file
-    if command -v steghide &> /dev/null; then
-        # Create a password
-        password="hakeem_$(date +%s)"
-        
-        # Embed the file
-        steghide embed -cf "$stego_image" -ef "$hidden_file" -p "$password" -sf "$stego_image.tmp" 2>/dev/null
-        
-        if [ $? -eq 0 ]; then
-            mv "$stego_image.tmp" "$stego_image"
-            echo -e "${GREEN}[✓] Data successfully hidden in image!${NC}"
-            echo -e "${CYAN}[*] Password for extraction: $password${NC}"
+    for tool in exiftool python3 file; do
+        if ! command -v "$tool" &>/dev/null; then
+            missing+=("$tool")
+            echo -e "${YELLOW}[!] $tool: $(msg tool_missing)${NC}"
         else
-            echo -e "${RED}[X] Steghide failed, using alternative method...${NC}"
-            # Alternative: append text to image
-            echo "=== HIDDEN DATA ===" >> "$stego_image"
-            echo "$hidden_text" >> "$stego_image"
-            echo "=== END ===" >> "$stego_image"
-        fi
-    else
-        # Simple append method
-        echo -e "${YELLOW}[!] Steghide not available, using simple method${NC}"
-        echo "=== HIDDEN DATA BY HAKEEM ===" >> "$stego_image"
-        echo "$hidden_text" >> "$stego_image"
-        echo "=== END ===" >> "$stego_image"
-    fi
-    
-    # Copy to Download folder
-    if [ -d "/sdcard/Download" ]; then
-        cp "$stego_image" "/sdcard/Download/"
-        echo -e "${GREEN}[✓] Stego image saved to: /sdcard/Download/${NC}"
-    fi
-    
-    echo -e "${BLUE}[*] Original image: $image_path${NC}"
-    echo -e "${GREEN}[*] Stego image: $stego_image${NC}"
-    echo -e "${YELLOW}[*] Hidden file: $hidden_file${NC}"
-    
-    log_action "Hide File" "Hidden data in $(basename "$image_path")"
-    
-    return 0
-}
-
-# ===================================================
-# 🔓 EXTRACT HIDDEN DATA FROM IMAGE
-# ===================================================
-extract_from_image() {
-    echo -e "${CYAN}[*] EXTRACT HIDDEN DATA FROM IMAGE${NC}"
-    echo -e "${BLUE}────────────────────────────────────${NC}"
-    
-    # Get image path
-    echo -e "${YELLOW}[?] Enter stego image path: ${NC}"
-    echo -ne "${GREEN}[>] ${NC}"
-    read stego_image
-    
-    if [ ! -f "$stego_image" ]; then
-        echo -e "${RED}[X] Error: Image not found!${NC}"
-        return 1
-    fi
-    
-    echo -e "${YELLOW}[*] Analyzing image for hidden data...${NC}"
-    
-    # Try to extract with steghide first
-    extracted_data=""
-    
-    if command -v steghide &> /dev/null; then
-        echo -e "${YELLOW}[?] Try password (or press Enter for auto-scan): ${NC}"
-        echo -ne "${GREEN}[>] ${NC}"
-        read password
-        
-        if [ -z "$password" ]; then
-            # Try common passwords
-            passwords=("hakeem" "password" "secret" "123456" "image" "stego" "")
-            
-            for pass in "${passages[@]}"; do
-                echo -e "${BLUE}[*] Trying password: $pass${NC}"
-                steghide extract -sf "$stego_image" -p "$pass" -xf "$HIDDEN_DIR/extracted_$$.txt" 2>/dev/null
-                if [ $? -eq 0 ]; then
-                    extracted_data=$(cat "$HIDDEN_DIR/extracted_$$.txt" 2>/dev/null)
-                    echo -e "${GREEN}[✓] Data extracted with password: $pass${NC}"
-                    break
-                fi
-            done
-        else
-            steghide extract -sf "$stego_image" -p "$password" -xf "$HIDDEN_DIR/extracted_$$.txt" 2>/dev/null
-            if [ $? -eq 0 ]; then
-                extracted_data=$(cat "$HIDDEN_DIR/extracted_$$.txt" 2>/dev/null)
-                echo -e "${GREEN}[✓] Data extracted successfully!${NC}"
-            fi
-        fi
-    fi
-    
-    # If steghide didn't work, try strings command
-    if [ -z "$extracted_data" ]; then
-        echo -e "${YELLOW}[*] Trying strings extraction...${NC}"
-        extracted_data=$(strings "$stego_image" | grep -A 20 -B 5 "HIDDEN\|SECRET\|HAKEEM")
-        
-        if [ -z "$extracted_data" ]; then
-            # Get last 1000 characters of file
-            extracted_data=$(tail -c 1000 "$stego_image" | strings)
-        fi
-    fi
-    
-    if [ -z "$extracted_data" ]; then
-        echo -e "${RED}[X] No hidden data found in image${NC}"
-        return 1
-    fi
-    
-    # Save extracted data
-    timestamp=$(date +"%Y%m%d_%H%M%S")
-    extracted_file="$HIDDEN_DIR/extracted_$timestamp.txt"
-    echo "$extracted_data" > "$extracted_file"
-    
-    echo -e "${GREEN}[✓] Hidden data extracted!${NC}"
-    echo -e "${CYAN}[*] Extracted data saved to: $extracted_file${NC}"
-    
-    # Display first few lines
-    echo -e "${BLUE}────────────────────────────────────${NC}"
-    echo -e "${WHITE}EXTRACTED DATA:${NC}"
-    echo "$extracted_data" | head -20
-    echo -e "${BLUE}────────────────────────────────────${NC}"
-    
-    log_action "Extract Data" "Extracted from $(basename "$stego_image")"
-    
-    return 0
-}
-
-# ===================================================
-# 🔍 FORENSIC ANALYSIS OF IMAGE (HTML REPORT)
-# ===================================================
-forensic_analysis() {
-    echo -e "${CYAN}[*] FORENSIC ANALYSIS OF IMAGE${NC}"
-    echo -e "${BLUE}────────────────────────────────────${NC}"
-    
-    # Get image path
-    echo -e "${YELLOW}[?] Enter image path for analysis: ${NC}"
-    echo -e "${WHITE}    Example: /sdcard/Download/photo.jpg${NC}"
-    echo -ne "${GREEN}[>] ${NC}"
-    read image_path
-    
-    if [ ! -f "$image_path" ]; then
-        echo -e "${RED}[X] Error: Image not found!${NC}"
-        return 1
-    fi
-    
-    echo -e "${YELLOW}[*] Performing forensic analysis...${NC}"
-    
-    # Get image information
-    filename=$(basename "$image_path")
-    filesize=$(du -h "$image_path" | cut -f1)
-    timestamp=$(date +"%Y%m%d_%H%M%S")
-    
-    # Extract EXIF data
-    echo -e "${BLUE}[*] Extracting EXIF data...${NC}"
-    exif_data=$(exiftool "$image_path" 2>/dev/null)
-    
-    # Extract specific information
-    make=$(echo "$exif_data" | grep -i "make" | head -1 | cut -d: -f2- | xargs)
-    model=$(echo "$exif_data" | grep -i "model" | head -1 | cut -d: -f2- | xargs)
-    datetime=$(echo "$exif_data" | grep -i "date" | head -1 | cut -d: -f2- | xargs)
-    gps_lat=$(exiftool -n -GPSLatitude "$image_path" 2>/dev/null | awk -F': ' '{print $2}' | xargs)
-    gps_lon=$(exiftool -n -GPSLongitude "$image_path" 2>/dev/null | awk -F': ' '{print $2}' | xargs)
-    software=$(echo "$exif_data" | grep -i "software" | head -1 | cut -d: -f2- | xargs)
-    
-    # Check for hidden data
-    echo -e "${BLUE}[*] Checking for hidden data...${NC}"
-    hidden_data=$(strings "$image_path" | grep -i -E "hidden|secret|password|stego|hakeem" | head -5)
-    
-    # Create HTML report
-    html_file="$REPORTS_DIR/forensic_report_${filename%.*}_$timestamp.html"
-    
-    echo -e "${BLUE}[*] Creating HTML report...${NC}"
-    
-    # Start HTML file
-    cat > "$html_file" << HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forensic Report - $filename</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-        }
-        
-        .header {
-            background: linear-gradient(90deg, #ff0000, #ff9900);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #00dbde, #fc00ff);
-        }
-        
-        .header h1 {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .developer {
-            font-size: 1.5rem;
-            margin-top: 10px;
-            color: #ffcc00;
-            font-weight: bold;
-        }
-        
-        .section {
-            padding: 30px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .section-title {
-            color: #ff0000;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #ff0000;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .section-title i {
-            font-size: 1.5rem;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .info-card {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 12px;
-            border-left: 6px solid #3498db;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .info-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        
-        .info-card.danger {
-            border-left-color: #e74c3c;
-            background: #ffeaea;
-        }
-        
-        .info-card.warning {
-            border-left-color: #f39c12;
-            background: #fff3cd;
-        }
-        
-        .info-card.success {
-            border-left-color: #2ecc71;
-            background: #eaffea;
-        }
-        
-        .label {
-            font-weight: bold;
-            color: #2c3e50;
-            display: block;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
-        }
-        
-        .value {
-            color: #7f8c8d;
-            font-size: 1.2rem;
-            word-break: break-word;
-        }
-        
-        .exif-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .exif-table th {
-            background: linear-gradient(90deg, #3498db, #2980b9);
-            color: white;
-            padding: 18px;
-            text-align: left;
-            font-weight: bold;
-        }
-        
-        .exif-table td {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .exif-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        
-        .exif-table tr:hover {
-            background: #e3f2fd;
-        }
-        
-        .map-links {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-        
-        .map-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .map-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
-        }
-        
-        .map-btn.danger {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-        }
-        
-        .footer {
-            background: #2c3e50;
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
-        
-        .footer h3 {
-            color: #ff9900;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-        
-        .tools-used {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        
-        .tool-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-        }
-        
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .exif-table {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1><i class="fas fa-microscope"></i> FORENSIC ANALYSIS REPORT</h1>
-            <p>Complete Image Metadata & Steganography Analysis</p>
-            <div class="developer">
-                <i class="fas fa-crown"></i> DEVELOPER: HAKEEM AL-ARAB
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-file-image"></i> IMAGE INFORMATION</h2>
-            <div class="info-grid">
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-file"></i> File Name</span>
-                    <span class="value">$filename</span>
-                </div>
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-weight-hanging"></i> File Size</span>
-                    <span class="value">$filesize</span>
-                </div>
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-folder"></i> File Path</span>
-                    <span class="value">$image_path</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-camera"></i> CAMERA & DEVICE INFORMATION</h2>
-            <div class="info-grid">
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-camera-retro"></i> Device Make</span>
-                    <span class="value">${make:-Not Available}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-mobile-alt"></i> Device Model</span>
-                    <span class="value">${model:-Not Available}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-calendar-alt"></i> Date & Time</span>
-                    <span class="value">${datetime:-Not Available}</span>
-                </div>
-                <div class="info-card">
-                    <span class="label"><i class="fas fa-code"></i> Software Used</span>
-                    <span class="value">${software:-Not Available}</span>
-                </div>
-            </div>
-        </div>
-HTML
-
-    # Add GPS section if available
-    if [ -n "$gps_lat" ] && [ -n "$gps_lon" ]; then
-        cat >> "$html_file" << GPS
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-map-marker-alt"></i> LOCATION DATA (GPS)</h2>
-            <div class="info-card danger">
-                <span class="label"><i class="fas fa-exclamation-triangle"></i> SECURITY WARNING</span>
-                <span class="value">This image contains GPS coordinates that can reveal exact location</span>
-            </div>
-            <div class="info-grid" style="margin-top: 20px;">
-                <div class="info-card danger">
-                    <span class="label"><i class="fas fa-globe-americas"></i> Latitude</span>
-                    <span class="value">$gps_lat</span>
-                </div>
-                <div class="info-card danger">
-                    <span class="label"><i class="fas fa-globe-americas"></i> Longitude</span>
-                    <span class="value">$gps_lon</span>
-                </div>
-            </div>
-            <div class="map-links">
-                <a href="https://maps.google.com/?q=$gps_lat,$gps_lon" class="map-btn" target="_blank">
-                    <i class="fab fa-google"></i> View on Google Maps
-                </a>
-                <a href="https://www.openstreetmap.org/?mlat=$gps_lat&mlon=$gps_lon" class="map-btn" target="_blank">
-                    <i class="fas fa-map"></i> View on OpenStreetMap
-                </a>
-            </div>
-        </div>
-GPS
-    else
-        cat >> "$html_file" << NOGPS
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-map-marker-alt"></i> LOCATION DATA (GPS)</h2>
-            <div class="info-card success">
-                <span class="label"><i class="fas fa-shield-alt"></i> SECURITY STATUS</span>
-                <span class="value">No GPS data found in this image</span>
-            </div>
-        </div>
-NOGPS
-    fi
-
-    # Add steganography analysis
-    if [ -n "$hidden_data" ]; then
-        cat >> "$html_file" << STEGO
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-user-secret"></i> STEGANOGRAPHY ANALYSIS</h2>
-            <div class="info-card warning">
-                <span class="label"><i class="fas fa-exclamation-circle"></i> HIDDEN DATA DETECTED</span>
-                <span class="value">This image may contain hidden or embedded data</span>
-            </div>
-            <div class="info-card" style="margin-top: 20px;">
-                <span class="label"><i class="fas fa-search"></i> Suspicious Strings Found</span>
-                <span class="value"><pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">$hidden_data</pre></span>
-            </div>
-        </div>
-STEGO
-    else
-        cat >> "$html_file" << NOSTEGO
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-user-secret"></i> STEGANOGRAPHY ANALYSIS</h2>
-            <div class="info-card success">
-                <span class="label"><i class="fas fa-check-circle"></i> ANALYSIS RESULT</span>
-                <span class="value">No obvious hidden data detected in this image</span>
-            </div>
-        </div>
-NOSTEGO
-    fi
-
-    # Add EXIF data table
-    cat >> "$html_file" << EXIF
-        <div class="section">
-            <h2 class="section-title"><i class="fas fa-database"></i> COMPLETE EXIF METADATA</h2>
-            <div style="overflow-x: auto;">
-                <table class="exif-table">
-                    <thead>
-                        <tr>
-                            <th>TAG</th>
-                            <th>VALUE</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-EXIF
-
-    # Add EXIF data rows
-    exiftool "$image_path" 2>/dev/null | while read -r line; do
-        if [ -n "$line" ]; then
-            tag=$(echo "$line" | cut -d: -f1 | xargs)
-            value=$(echo "$line" | cut -d: -f2- | xargs | sed 's/</\&lt;/g; s/>/\&gt;/g')
-            
-            # Truncate long values
-            if [ ${#value} -gt 100 ]; then
-                value="${value:0:100}..."
-            fi
-            
-            cat >> "$html_file" << ROW
-                        <tr>
-                            <td><strong>$tag</strong></td>
-                            <td>$value</td>
-                        </tr>
-ROW
+            echo -e "${GREEN}[✓] $tool: $(msg tool_found)${NC}"
         fi
     done
 
-    # Close HTML
-    cat >> "$html_file" << FOOTER
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <h3><i class="fas fa-tools"></i> FORENSIC TOOLS USED</h3>
-            <div class="tools-used">
-                <div class="tool-badge">ExifTool</div>
-                <div class="tool-badge">Steghide</div>
-                <div class="tool-badge">Strings Analysis</div>
-                <div class="tool-badge">Binary Analysis</div>
-            </div>
-            
-            <div style="margin: 30px 0;">
-                <h3 style="color: #ffcc00;">
-                    <i class="fas fa-crown"></i> REPORT GENERATED BY HAKEEM STEGANOGRAPHY TOOL
-                </h3>
-                <p style="margin: 10px 0; font-size: 1.2rem;">
-                    <i class="fas fa-user"></i> Developer: Hakeem Al-Arab
-                </p>
-                <p style="margin: 10px 0;">
-                    <i class="fab fa-github"></i> GitHub: <a href="https://github.com/hakim738-html" style="color: #3498db;">hakim738-html</a>
-                </p>
-                <p style="margin: 10px 0;">
-                    <i class="fas fa-calendar"></i> Report Date: $(date '+%Y-%m-%d %H:%M:%S')
-                </p>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-top: 20px;">
-                <p style="font-size: 0.9rem;">
-                    <i class="fas fa-exclamation-triangle"></i> 
-                    <strong>LEGAL DISCLAIMER:</strong> This tool is for educational purposes, legitimate forensic analysis, 
-                    and security research only. Never use for illegal activities.
-                </p>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // Add some interactivity
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add click event to info cards
-            const cards = document.querySelectorAll('.info-card');
-            cards.forEach(card => {
-                card.addEventListener('click', function() {
-                    this.style.transform = 'scale(0.98)';
-                    setTimeout(() => {
-                        this.style.transform = '';
-                    }, 150);
-                });
-            });
-            
-            // Print button functionality
-            const printBtn = document.createElement('button');
-            printBtn.innerHTML = '<i class="fas fa-print"></i> Print Report';
-            printBtn.style.cssText = \`
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #3498db;
-                color: white;
-                border: none;
-                padding: 15px 25px;
-                border-radius: 50px;
-                cursor: pointer;
-                font-size: 16px;
-                box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-                z-index: 1000;
-            \`;
-            printBtn.onclick = () => window.print();
-            document.body.appendChild(printBtn);
-        });
-    </script>
-</body>
-</html>
-FOOTER
+    if command -v python3 &>/dev/null; then
+        if ! python3 -c "from PIL import Image" 2>/dev/null; then
+            echo -e "${YELLOW}[!] Pillow: $(msg tool_missing)${NC}"
+            missing+=("pillow")
+        else
+            echo -e "${GREEN}[✓] Pillow: $(msg tool_found)${NC}"
+        fi
+    fi
 
-    echo -e "${GREEN}[✓] Forensic report created successfully!${NC}"
-    echo -e "${CYAN}[*] Report saved to: $html_file${NC}"
-    
-    # Copy to Download folder
-    if [ -d "/sdcard/Download" ]; then
-        cp "$html_file" "/sdcard/Download/"
-        echo -e "${GREEN}[✓] Report copied to: /sdcard/Download/${NC}"
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo -e "${YELLOW}[!] $(msg install_deps)...${NC}"
+        pkg update -y >/dev/null 2>&1
+        for tool in "${missing[@]}"; do
+            echo -e "${BLUE}[*] $(msg tool_installing) $tool...${NC}"
+            case "$tool" in
+                pillow) pip install pillow >/dev/null 2>&1 ;;
+                *) pkg install "$tool" -y >/dev/null 2>&1 ;;
+            esac
+        done
+        echo -e "${GREEN}[✓] Done${NC}"
     fi
-    
-    # Display report info
-    echo ""
-    echo -e "${YELLOW}📊 REPORT SUMMARY:${NC}"
-    echo "  📷 Device: ${make:-Unknown} ${model:-Unknown}"
-    echo "  📍 GPS: $(if [ -n "$gps_lat" ]; then echo "✅ Found"; else echo "❌ Not found"; fi)"
-    echo "  🔍 Hidden Data: $(if [ -n "$hidden_data" ]; then echo "✅ Detected"; else echo "❌ Not detected"; fi)"
-    echo "  📏 File Size: $filesize"
-    echo ""
-    echo -e "${BLUE}[*] TO VIEW REPORT:${NC}"
-    echo "  📱 On Phone: Open File Manager → Download folder"
-    echo "  💻 In Browser: Open the HTML file"
-    
-    # Try to open the report
-    if command -v termux-open &> /dev/null; then
-        echo -e "${YELLOW}[*] Opening report in browser...${NC}"
-        termux-open "$html_file" 2>/dev/null &
-    fi
-    
-    log_action "Forensic Analysis" "Created report for $(basename "$image_path")"
-    
-    return 0
 }
 
-# ===================================================
-# 📝 LOG ACTIONS
-# ===================================================
-log_action() {
-    local action="$1"
-    local details="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local log_file="$LOGS_DIR/activity.log"
-    
-    echo "[$timestamp] $action: $details" >> "$log_file"
-    
-    # Display in terminal
-    echo -e "${PURPLE}════════════════════════════════════════${NC}"
-    echo -e "${CYAN}[📝 LOG] ${WHITE}$timestamp${NC}"
-    echo -e "${GREEN}Action:${NC} $action"
-    echo -e "${YELLOW}Details:${NC} $details"
-    echo -e "${PURPLE}════════════════════════════════════════${NC}"
+# === PYTHON HELPER ===
+create_python_helper() {
+    cat > "$BASE_DIR/stego_helper.py" << 'PYEOF'
+#!/usr/bin/env python3
+import sys
+from PIL import Image
+
+def hide_text(image_path, text, output_path):
+    image = Image.open(image_path).convert("RGB")
+    text_bytes = text.encode('utf-8')
+    length = len(text_bytes)
+    data = length.to_bytes(4, 'big') + text_bytes
+    binary_data = ''.join(format(b, '08b') for b in data)
+    capacity = image.width * image.height * 3
+    if len(binary_data) > capacity:
+        print(f"ERROR: need {len(binary_data)//8} bytes, capacity {capacity//8} bytes", file=sys.stderr)
+        sys.exit(2)
+    pixels = list(image.getdata())
+    new_pixels, idx = [], 0
+    for pixel in pixels:
+        r, g, b = pixel
+        if idx < len(binary_data): r = (r & ~1) | int(binary_data[idx]); idx += 1
+        if idx < len(binary_data): g = (g & ~1) | int(binary_data[idx]); idx += 1
+        if idx < len(binary_data): b = (b & ~1) | int(binary_data[idx]); idx += 1
+        new_pixels.append((r, g, b))
+    new_image = Image.new("RGB", image.size)
+    new_image.putdata(new_pixels)
+    new_image.save(output_path, format="PNG")
+    print(f"OK:{length}")
+
+def extract_text(image_path):
+    image = Image.open(image_path).convert("RGB")
+    pixels = list(image.getdata())
+    bits = []
+    for pixel in pixels:
+        for i in range(3):
+            bits.append(pixel[i] & 1)
+    if len(bits) < 32:
+        print("ERROR:image too small", file=sys.stderr); sys.exit(3)
+    length = 0
+    for i in range(32):
+        length = (length << 1) | bits[i]
+    if length <= 0 or length * 8 + 32 > len(bits):
+        print("ERROR:no valid data", file=sys.stderr); sys.exit(4)
+    data_bytes = bytearray()
+    for i in range(length):
+        byte = 0
+        for j in range(8):
+            byte = (byte << 1) | bits[32 + i*8 + j]
+        data_bytes.append(byte)
+    try:
+        print(data_bytes.decode('utf-8'))
+    except UnicodeDecodeError:
+        print("ERROR:not valid UTF-8", file=sys.stderr); sys.exit(5)
+
+if __name__ == "__main__":
+    if len(sys.argv) == 5 and sys.argv[1] == "hide":
+        hide_text(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif len(sys.argv) == 3 and sys.argv[1] == "extract":
+        extract_text(sys.argv[2])
+    else:
+        print("Usage: stego_helper.py hide <img> <text> <out> | extract <img>", file=sys.stderr)
+        sys.exit(1)
+PYEOF
+    chmod +x "$BASE_DIR/stego_helper.py"
 }
 
-# ===================================================
-# 📋 MAIN MENU
-# ===================================================
+# === HIDE TEXT ===
+hide_text_menu() {
+    echo -e "${CYAN}═══ $(msg menu_hide) ═══${NC}"
+    read -r -p "$(msg prompt_image): " img_path
+    img_path=$(expand_path "$img_path")
+
+    if [ ! -f "$img_path" ]; then
+        echo -e "${RED}[✗] $(msg file_not_found): $img_path${NC}"
+        return
+    fi
+
+    local backup="$BACKUP_DIR/$(basename "$img_path").bak"
+    cp "$img_path" "$backup"
+    echo -e "${GREEN}[✓] $(msg backup_created): $backup${NC}"
+
+    read -r -p "$(msg prompt_text): " secret_text
+    if [ -z "$secret_text" ]; then
+        echo -e "${RED}[✗] Empty text / النص فارغ${NC}"
+        return
+    fi
+
+    read -r -p "$(msg prompt_output) [hidden_output]: " out_name
+    out_name="${out_name:-hidden_output}"
+    local output="$STEGO_DIR/${out_name}.png"
+
+    echo -e "${YELLOW}[*] $(msg processing)...${NC}"
+    if python3 "$BASE_DIR/stego_helper.py" hide "$img_path" "$secret_text" "$output" 2>&1; then
+        echo -e "${GREEN}[✓] $(msg success_hide)${NC}"
+        echo -e "${GREEN}[✓] Output: $output${NC}"
+        log_action "HIDE: $img_path -> $output"
+    else
+        echo -e "${RED}[✗] $(msg capacity_error)${NC}"
+    fi
+}
+
+# === EXTRACT TEXT ===
+extract_text_menu() {
+    echo -e "${CYAN}═══ $(msg menu_extract) ═══${NC}"
+    read -r -p "$(msg prompt_image): " img_path
+    img_path=$(expand_path "$img_path")
+
+    if [ ! -f "$img_path" ]; then
+        echo -e "${RED}[✗] $(msg file_not_found)${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}[*] $(msg processing)...${NC}"
+    local result
+    result=$(python3 "$BASE_DIR/stego_helper.py" extract "$img_path" 2>&1)
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}[✓] $(msg success_extract):${NC}"
+        echo -e "${WHITE}─────────────────────────────────────${NC}"
+        echo -e "$result"
+        echo -e "${WHITE}─────────────────────────────────────${NC}"
+        log_action "EXTRACT: $img_path"
+    else
+        echo -e "${RED}[✗] $(msg no_hidden_text)${NC}"
+        echo -e "${YELLOW}$result${NC}"
+    fi
+}
+
+# === EXIF ANALYSIS ===
+exif_menu() {
+    echo -e "${CYAN}═══ $(msg menu_exif) ═══${NC}"
+    read -r -p "$(msg prompt_image): " img_path
+    img_path=$(expand_path "$img_path")
+
+    if [ ! -f "$img_path" ]; then
+        echo -e "${RED}[✗] $(msg file_not_found)${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}[*] $(msg processing)...${NC}"
+    echo ""
+    if command -v exiftool &>/dev/null; then
+        exiftool "$img_path"
+    else
+        file "$img_path"
+    fi
+    log_action "EXIF: $img_path"
+}
+
+# === FORENSIC ANALYSIS ===
+forensic_menu() {
+    echo -e "${CYAN}═══ $(msg menu_forensic) ═══${NC}"
+    read -r -p "$(msg prompt_image): " img_path
+    img_path=$(expand_path "$img_path")
+
+    if [ ! -f "$img_path" ]; then
+        echo -e "${RED}[✗] $(msg file_not_found)${NC}"
+        return
+    fi
+
+    local report="$REPORTS_DIR/forensic_$(date +%Y%m%d_%H%M%S).txt"
+    {
+        echo "==========================================="
+        echo "  HAKEEM FORENSIC REPORT / تقرير جنائي"
+        echo "  Date: $(date)"
+        echo "  File: $img_path"
+        echo "==========================================="
+        echo ""
+        echo "=== FILE INFO ==="
+        file "$img_path"
+        ls -lh "$img_path"
+        echo ""
+        echo "=== HASHES ==="
+        (md5sum "$img_path" 2>/dev/null || md5 "$img_path" 2>/dev/null)
+        (sha1sum "$img_path" 2>/dev/null || shasum "$img_path" 2>/dev/null)
+        (sha256sum "$img_path" 2>/dev/null || shasum -a 256 "$img_path" 2>/dev/null)
+        echo ""
+        echo "=== EXIF METADATA ==="
+        exiftool "$img_path" 2>/dev/null || echo "exiftool not available"
+        echo ""
+        echo "=== STRINGS (first 100) ==="
+        strings "$img_path" 2>/dev/null | head -100
+        echo ""
+        echo "=== HEXDUMP (first 32 lines) ==="
+        if command -v xxd &>/dev/null; then
+            xxd "$img_path" | head -32
+        elif command -v hexdump &>/dev/null; then
+            hexdump -C "$img_path" | head -32
+        else
+            echo "No hex tool available"
+        fi
+    } > "$report" 2>&1
+
+    cat "$report"
+    echo ""
+    echo -e "${GREEN}[✓] $(msg report_saved): $report${NC}"
+    log_action "FORENSIC: $img_path -> $report"
+}
+
+# === VIEW LOGS ===
+view_logs() {
+    echo -e "${CYAN}═══ $(msg menu_logs) ═══${NC}"
+    if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+        tail -50 "$LOG_FILE"
+    else
+        echo -e "${YELLOW}$(msg logs_empty)${NC}"
+    fi
+}
+
+# === CHANGE LANGUAGE ===
+change_language() {
+    echo -e "${CYAN}═══ $(msg lang_prompt) ═══${NC}"
+    echo "1) العربية"
+    echo "2) English"
+    read -r -p "> " choice
+    case "$choice" in
+        1) LANG_CHOICE="ar" ;;
+        2) LANG_CHOICE="en" ;;
+        *) echo -e "${RED}$(msg invalid_choice)${NC}"; return ;;
+    esac
+    echo "$LANG_CHOICE" > "$LANG_FILE"
+    echo -e "${GREEN}[✓] $(msg lang_set): $LANG_CHOICE${NC}"
+}
+
+# === INITIAL LANGUAGE SELECTION ===
+initial_language_select() {
+    if [ ! -f "$LANG_FILE" ]; then
+        clear
+        echo -e "${CYAN}╔══════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║  Select Language / اختر اللغة   ║${NC}"
+        echo -e "${CYAN}╚══════════════════════════════════╝${NC}"
+        echo "1) العربية"
+        echo "2) English"
+        read -r -p "> " choice
+        case "$choice" in
+            1) LANG_CHOICE="ar" ;;
+            2) LANG_CHOICE="en" ;;
+            *) LANG_CHOICE="en" ;;
+        esac
+        echo "$LANG_CHOICE" > "$LANG_FILE"
+    fi
+}
+
+# === MAIN MENU ===
 main_menu() {
-    # Check tools on startup
-    check_tools
-    
     while true; do
         show_banner
-        
-        echo -e "${CYAN}══════════════════════════════════════════════════════${NC}"
-        echo -e "${WHITE}               H A K E E M   M E N U                  ${NC}"
-        echo -e "${CYAN}══════════════════════════════════════════════════════${NC}"
+        echo -e "${CYAN}═══ $(msg menu_title) ═══${NC}"
+        echo -e "${GREEN}[1]${NC} $(msg menu_hide)"
+        echo -e "${GREEN}[2]${NC} $(msg menu_extract)"
+        echo -e "${GREEN}[3]${NC} $(msg menu_exif)"
+        echo -e "${GREEN}[4]${NC} $(msg menu_forensic)"
+        echo -e "${GREEN}[5]${NC} $(msg menu_logs)"
+        echo -e "${GREEN}[6]${NC} $(msg menu_lang)"
+        echo -e "${RED}[0]${NC} $(msg menu_exit)"
         echo ""
-        echo -e "${GREEN}[1] 📸 HIDE TEXT IN IMAGE (Steganography)"
-        echo -e "[2] 🔓 EXTRACT HIDDEN DATA FROM IMAGE"
-        echo -e "[3] 🔍 FORENSIC ANALYSIS (Create HTML Report)"
-        echo -e "[4] 📁 VIEW STEGO IMAGES"
-        echo -e "[5] 📁 VIEW REPORTS"
-        echo -e "[6] 📁 VIEW HIDDEN FILES"
-        echo -e "[7] 📊 SYSTEM INFORMATION"
-        echo -e "${RED}[0] 🚪 EXIT"
-        echo -e "${NC}"
-        echo -e "${CYAN}══════════════════════════════════════════════════════${NC}"
-        
-        echo -e "${YELLOW}[?] SELECT OPTION: ${NC}\c"
-        read choice
-        
-        case $choice in
-            1)
-                hide_file_in_image
-                ;;
-            2)
-                extract_from_image
-                ;;
-            3)
-                forensic_analysis
-                ;;
-            4)
-                echo -e "${CYAN}[*] Stego Images:${NC}"
-                ls -lt "$STEGO_DIR"/* 2>/dev/null | head -10 | awk '{print $9}'
-                echo ""
-                ;;
-            5)
-                echo -e "${CYAN}[*] Forensic Reports:${NC}"
-                ls -lt "$REPORTS_DIR"/*.html 2>/dev/null | head -10 | awk '{print $9}'
-                echo ""
-                ;;
-            6)
-                echo -e "${CYAN}[*] Hidden Files:${NC}"
-                ls -lt "$HIDDEN_DIR"/*.txt 2>/dev/null | head -10 | awk '{print $9}'
-                echo ""
-                ;;
-            7)
-                echo -e "${CYAN}[*] System Info:${NC}"
-                echo "  OS: $(uname -o)"
-                echo "  Storage: $(df -h . | tail -1 | awk '{print $4}') free"
-                echo "  Tool: Hakeem Steganography v6.0"
-                echo "  Developer: Hakeem Al-Arab"
-                ;;
-            0)
-                echo -e "${GREEN}[✓] Thank you for using Hakeem Steganography Tool!${NC}"
-                echo -e "${YELLOW}[*] GitHub: hakim738-html${NC}"
-                echo -e "${RED}👑 Developed by Hakeem Al-Arab${NC}"
-                exit 0
-                ;;
-            *)
-                echo -e "${RED}[X] Invalid option!${NC}"
-                ;;
+        read -r -p "$(msg prompt_choice): " choice
+
+        case "$choice" in
+            1) hide_text_menu; read -r -p "$(msg press_enter)..." ;;
+            2) extract_text_menu; read -r -p "$(msg press_enter)..." ;;
+            3) exif_menu; read -r -p "$(msg press_enter)..." ;;
+            4) forensic_menu; read -r -p "$(msg press_enter)..." ;;
+            5) view_logs; read -r -p "$(msg press_enter)..." ;;
+            6) change_language; read -r -p "$(msg press_enter)..." ;;
+            0) echo -e "${GREEN}$(msg goodbye)${NC}"; exit 0 ;;
+            *) echo -e "${RED}$(msg invalid_choice)${NC}"; sleep 1 ;;
         esac
-        
-        echo ""
-        echo -e "${YELLOW}[!] PRESS ENTER TO CONTINUE...${NC}"
-        read
     done
 }
 
-# ===================================================
-# 🚀 START TOOL
-# ===================================================
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Clear screen and start
-    clear
-    echo -e "${GREEN}[*] Starting Hakeem Steganography Tool v6.0...${NC}"
-    sleep 1
-    main_menu
-fi
+# === ENTRY POINT ===
+initial_language_select
+check_tools
+create_python_helper
+log_action "=== Session started (lang=$LANG_CHOICE) ==="
+main_menu
