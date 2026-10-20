@@ -2,7 +2,7 @@
 # ===================================================
 # 🔥 H A K E E M   S T E G A N O G R A P H Y   T O O L
 # 👑 DEVELOPER: Hakeem Al-Arab
-# 🎯 VERSION: 6.5 - Arabic Shaping & Numeral Fix
+# 🎯 VERSION: 6.6 - Universal Input Support
 # 🌐 GITHUB: hakim738-html
 # 🌍 Languages: العربية / English
 # ===================================================
@@ -45,12 +45,9 @@ ensure_arabic_support() {
             ARABIC_SUPPORT=1
         else
             echo -e "${YELLOW}[*] Installing Arabic display support...${NC}"
-            pip install --quiet arabic-reshaper python-bidi 2>/dev/null || \
-            pip install --quiet --break-system-packages arabic-reshaper python-bidi 2>/dev/null || true
-            
+            pip install --quiet arabic-reshaper python-bidi==0.4.2 --break-system-packages 2>/dev/null || true
             if python3 -c "import arabic_reshaper; from bidi.algorithm import get_display" 2>/dev/null; then
                 ARABIC_SUPPORT=1
-                echo -e "${GREEN}[✓] Arabic shaping enabled${NC}"
             fi
         fi
     fi
@@ -81,6 +78,15 @@ except Exception:
     printf '%s' "$shaped"
 }
 
+# === 🆕 UNIVERSAL NUMBER CONVERTER (Accepts Arabic ٠١٢٣٤٥٦٧٨٩) ===
+normalize_num() {
+    python3 -c "
+import sys
+trans = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+print(sys.argv[1].translate(trans), end='')
+" "$1"
+}
+
 # === MESSAGES ===
 declare -A MSG_AR MSG_EN
 
@@ -104,7 +110,6 @@ MSG_AR=(
     [processing]="جاري المعالجة..."
     [success_hide]="تم إخفاء النص بنجاح"
     [success_extract]="تم استخراج النص بنجاح"
-    [error]="خطأ"
     [press_enter]="اضغط Enter للمتابعة..."
     [checking_tools]="فحص الأدوات المطلوبة"
     [tool_found]="موجودة"
@@ -145,7 +150,6 @@ MSG_EN=(
     [processing]="Processing..."
     [success_hide]="Text hidden successfully"
     [success_extract]="Text extracted successfully"
-    [error]="Error"
     [press_enter]="Press Enter to continue..."
     [checking_tools]="Checking required tools"
     [tool_found]="found"
@@ -181,14 +185,9 @@ msg() {
 # === HELPERS ===
 log_action() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 
-# 🆕 Convert Arabic numerals to English (e.g., ٢٠٢٦ -> 2026)
-normalize_num() {
-    echo "$1" | sed 's/٠/0/g; s/١/1/g; s/٢/2/g; s/٣/3/g; s/٤/4/g; s/٥/5/g; s/٦/6/g; s/٧/7/g; s/٨/8/g; s/٩/9/g'
-}
-
 expand_path() {
     local p="$1"
-    p=$(normalize_num "$p")
+    p=$(normalize_num "$p") # تحويل الأرقام العربية إلى إنجليزية
     p="${p/#\~/$HOME}"
     p="${p/#\$HOME/$HOME}"
     echo "$p"
@@ -217,7 +216,7 @@ show_banner() {
     echo -e "${NC}${CYAN}┌────────────────────────────────────────────────────┐${NC}"
     printf "${CYAN}│  👑 %-48s│${NC}\n" "$(msg developer)"
     printf "${CYAN}│  🌐 %-48s│${NC}\n" "GitHub: hakim738-html"
-    printf "${CYAN}│  🎯 %-48s│${NC}\n" "$(msg version): 6.5"
+    printf "${CYAN}│  🎯 %-48s│${NC}\n" "$(msg version): 6.6"
     printf "${CYAN}│  🌍 %-48s│${NC}\n" "Lang: $LANG_CHOICE"
     echo -e "${CYAN}└────────────────────────────────────────────────────┘${NC}"
     echo ""
@@ -251,7 +250,6 @@ check_tools() {
                 *) pkg install "$tool" -y >/dev/null 2>&1 ;;
             esac
         done
-        echo -e "${GREEN}[✓] Done${NC}"
     fi
 }
 
