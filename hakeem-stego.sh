@@ -2,11 +2,11 @@
 # ===================================================
 # 🔥 H A K E E M   S T E G A N O G R A P H Y   T O O L
 # 👑 DEVELOPER: Hakeem Al-Arab
-# 🎯 VERSION: 7.1 - Cyber Hacker Edition + Clickable Links
+# 🎯 VERSION: 7.2 - Cyber Hacker Edition + Dashboard
 # 🌐 GITHUB: hakim738-html
 # ===================================================
 
-# === COLORS ===
+# === COLORS (FIXED) ===
 RED=$'\033[0;31m'
 GREEN=$'\033[0;32m'
 YELLOW=$'\033[1;33m'
@@ -27,7 +27,7 @@ LOG_FILE="$LOGS_DIR/hakeem.log"
 
 mkdir -p "$STEGO_DIR" "$REPORTS_DIR" "$BACKUP_DIR" "$LOGS_DIR"
 
-# === LANGUAGE PERSISTENCE ===
+# === LANGUAGE PERSISTENCE (FIXED) ===
 LANG_CHOICE="ar"
 if [ -f "$LANG_FILE" ]; then
     LANG_CHOICE=$(tr -d '[:space:]' < "$LANG_FILE" 2>/dev/null)
@@ -169,7 +169,6 @@ log_action() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 expand_path() {
     local raw="$1"
     
-    # 1. Remove invisible control characters (RTL, LTR marks) that confuse bash
     local clean=$(python3 -c "
 import sys
 import unicodedata
@@ -179,10 +178,8 @@ print(''.join(c for c in sys.argv[1] if unicodedata.category(c) != 'Cf').strip()
     clean="${clean/#\~/$HOME}"
     clean="${clean/#\$HOME/$HOME}"
 
-    # 2. Try exact match (accepts Arabic numbers and letters natively)
     if [ -f "$clean" ]; then echo "$clean"; return; fi
     
-    # 3. Try converting Arabic numbers to English (just in case)
     local en=$(python3 -c "
 import sys
 import unicodedata
@@ -196,7 +193,6 @@ print(text.translate(trans).strip(), end='')
     
     if [ -f "$en" ]; then echo "$en"; return; fi
 
-    # 4. Smart search: find the file in the directory ignoring format differences
     local dir=$(dirname "$clean")
     local base=$(basename "$clean")
     if [ -d "$dir" ]; then
@@ -214,7 +210,7 @@ get_download_dir() {
     else mkdir -p "$HOME/Downloads"; echo "$HOME/Downloads"; fi
 }
 
-# === CYBER BANNER (Skull + Name) ===
+# === CYBER BANNER ===
 show_banner() {
     clear
     echo -e "${GREEN}${BOLD}"
@@ -228,14 +224,13 @@ show_banner() {
     ║   \     /   \     /  ██║  ██║██║  ██║██║  ██╗███████╗      ║
     ║    '.  /     \  .'   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝      ║
     ║      '-..___..-'                                           ║
-    ║                                                            ║
-    ║           👑 Hakeem Al-Arab  |  🎯 v7.1 Cyber Edition      ║
+    ║           👑 Hakeem Al-Arab  |  🎯 v7.2 Cyber Edition      ║
     ╠════════════════════════════════════════════════════════════╣
 EOF
     echo -e "${NC}"
 }
 
-# === TOOL CHECK (Silent) ===
+# === TOOL CHECK ===
 check_tools() {
     local missing=()
     for tool in exiftool python3 file; do
@@ -358,7 +353,7 @@ extract_text_menu() {
     fi
 }
 
-# === HTML REPORT (UPDATED: Clickable Link) ===
+# === HTML REPORT (CYBER DASHBOARD) ===
 create_html_report() {
     local img_path="$1"
     echo -e "${YELLOW}[*] $(msg report_gen)...${NC}"
@@ -366,34 +361,115 @@ create_html_report() {
     local exif_raw=$(exiftool "$img_path" 2>/dev/null)
     local md5=$(md5sum "$img_path" | cut -d' ' -f1)
     local sha=$(sha256sum "$img_path" | cut -d' ' -f1)
+
+    # استخراج المعلومات الهامة لفصلها في بطاقات
+    local make=$(echo "$exif_raw" | grep "^Make" | head -1 | sed 's/.*: //')
+    local model=$(echo "$exif_raw" | grep "^Camera Model Name" | head -1 | sed 's/.*: //')
+    local software=$(echo "$exif_raw" | grep "^Software" | head -1 | sed 's/.*: //')
+    local date_time=$(echo "$exif_raw" | grep "^Date/Time Original" | head -1 | sed 's/.*: //')
+    local resolution=$(echo "$exif_raw" | grep "^Image Size" | head -1 | sed 's/.*: //')
+    local iso=$(echo "$exif_raw" | grep "^ISO" | head -1 | sed 's/.*: //')
+    local aperture=$(echo "$exif_raw" | grep "^Aperture" | head -1 | sed 's/.*: //')
+    local focal=$(echo "$exif_raw" | grep "^Focal Length" | head -1 | sed 's/.*: //')
+    local flash=$(echo "$exif_raw" | grep "^Flash" | head -1 | sed 's/.*: //')
     
-    # إنشاء رابط file:// لفتح الصورة
-    local file_url="file://$img_path"
-    
+    # استخراج الموقع الجغرافي
+    local gps_pos=$(echo "$exif_raw" | grep "^GPS Position" | head -1 | sed 's/.*: //')
+    local gps_alt=$(echo "$exif_raw" | grep "^GPS Altitude" | head -1 | sed 's/.*: //')
+
+    local gps_html=""
+    if [ -n "$gps_pos" ]; then
+        local gps_encoded=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$gps_pos")
+        gps_html="
+        <div class='alert success'>
+            <h2>📍 تم العثور على موقع جغرافي!</h2>
+            <p>الإحداثيات: $gps_pos</p>
+            <p>الارتفاع: ${gps_alt:-غير متوفر}</p>
+            <a href='https://www.google.com/maps/search/?api=1&query=$gps_encoded' target='_blank' class='btn'>🗺️ فتح في خرائط جوجل</a>
+        </div>"
+    else
+        gps_html="
+        <div class='alert danger'>
+            <h2>❌ لا يوجد بيانات موقع</h2>
+            <p>تم حذف بيانات الـ GPS من هذه الصورة أو أن الكاميرا لم تسجلها.</p>
+        </div>"
+    fi
+
     cat > "$html_file" << HTMLEOF
 <!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
-<title>Hakeem Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hakeem Report - $model</title>
 <style>
-body{font-family:'Segoe UI', Tahoma, sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;line-height:1.6}
-h1{color:#58a6ff;text-align:center;text-shadow:0 0 10px rgba(88,166,255,0.5)}
-.box{background:#161b22;padding:20px;border-radius:8px;margin-bottom:20px;border:1px solid #30363d;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
-pre{background:#000;padding:15px;overflow:auto;direction:ltr;text-align:left;border-radius:6px;color:#7ee787;border:1px solid #30363d}
-.label{color:#8b949e;font-weight:bold}
-/* تنسيق الرابط القابل للنقر */
-.file-link{color:#58a6ff;text-decoration:none;word-break:break-all;font-weight:bold;transition:0.3s;border-bottom:1px dashed #58a6ff;}
-.file-link:hover{color:#79c0ff;text-shadow:0 0 8px #79c0ff;border-bottom:1px solid #79c0ff;}
+:root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --green: #238636; --red: #da3633; --blue: #58a6ff; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.6; }
+.container { max-width: 800px; margin: auto; }
+h1 { text-align: center; color: var(--blue); text-shadow: 0 0 10px rgba(88,166,255,0.5); margin-bottom: 30px; }
+.alert { padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; border: 1px solid; }
+.alert.success { background: rgba(35, 134, 54, 0.15); border-color: var(--green); }
+.alert.success h2 { color: #3fb950; margin-bottom: 10px; }
+.alert.danger { background: rgba(218, 54, 51, 0.15); border-color: var(--red); }
+.alert.danger h2 { color: #f85149; margin-bottom: 10px; }
+.btn { display: inline-block; background: var(--green); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 15px; font-weight: bold; transition: 0.3s; }
+.btn:hover { background: #2ea043; box-shadow: 0 0 15px #2ea043; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.card h3 { color: var(--blue); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.1em; }
+.data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95em; }
+.data-label { color: #8b949e; }
+.data-value { font-weight: bold; color: #fff; word-break: break-all; }
+.hash { font-family: monospace; background: #000; padding: 10px; border-radius: 4px; color: #7ee787; word-break: break-all; font-size: 0.85em; border: 1px solid var(--border); margin-bottom: 10px;}
+details { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-top: 20px; }
+summary { cursor: pointer; color: var(--blue); font-weight: bold; outline: none; }
+pre { background: #000; padding: 15px; overflow: auto; direction: ltr; text-align: left; border-radius: 6px; color: #7ee787; border: 1px solid var(--border); margin-top: 15px; font-size: 0.85em;}
+.footer { text-align: center; margin-top: 30px; color: #8b949e; font-size: 0.9em; }
 </style></head>
 <body>
-<h1>🔥 تقرير تحليل الصورة - Hakeem Stego</h1>
-<div class="box">
-<p><span class="label">الملف:</span> <a href="$file_url" target="_blank" class="file-link">$img_path</a></p>
-<p><span class="label">التاريخ:</span> $(date)</p>
-<p><span class="label">MD5:</span> $md5</p>
-<p><span class="label">SHA256:</span> $sha</p>
-</div>
-<div class="box">
-<h3 style="color:#58a6ff;">بيانات EXIF الكاملة:</h3>
-<pre>$exif_raw</pre>
+<div class="container">
+    <h1>🔥 لوحة التحليل الجنائي - Hakeem Stego</h1>
+    
+    $gps_html
+
+    <div class="grid">
+        <div class="card">
+            <h3>📱 معلومات الجهاز</h3>
+            <div class="data-row"><span class="data-label">الشركة:</span> <span class="data-value">${make:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">الطراز:</span> <span class="data-value">${model:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">نظام التشغيل:</span> <span class="data-value">${software:-غير معروف}</span></div>
+        </div>
+
+        <div class="card">
+            <h3>⏱️ التاريخ والوقت</h3>
+            <div class="data-row"><span class="data-label">تاريخ الالتقاط:</span> <span class="data-value">${date_time:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">دقة الصورة:</span> <span class="data-value">${resolution:-غير معروف}</span></div>
+        </div>
+
+        <div class="card">
+            <h3>📸 إعدادات الكاميرا</h3>
+            <div class="data-row"><span class="data-label">فتحة العدسة:</span> <span class="data-value">${aperture:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">حساسية الضوء (ISO):</span> <span class="data-value">${iso:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">البعد البؤري:</span> <span class="data-value">${focal:-غير معروف}</span></div>
+            <div class="data-row"><span class="data-label">الفلاش:</span> <span class="data-value">${flash:-غير معروف}</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🔐 التجزئات الرقمية (Hashes)</h3>
+        <div class="data-row"><span class="data-label">MD5:</span></div>
+        <div class="hash">$md5</div>
+        <div class="data-row"><span class="data-label">SHA256:</span></div>
+        <div class="hash">$sha</div>
+    </div>
+
+    <details>
+        <summary>🛠️ عرض البيانات الخام الكاملة (RAW EXIF)</summary>
+        <pre>$exif_raw</pre>
+    </details>
+
+    <div class="footer">
+        <p>👑 Hakeem Al-Arab - Cyber Forensics Tool</p>
+        <p>مسار الملف: $img_path</p>
+        <p>التاريخ: $(date)</p>
+    </div>
 </div>
 </body></html>
 HTMLEOF
