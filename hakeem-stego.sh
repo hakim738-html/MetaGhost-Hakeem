@@ -2,9 +2,8 @@
 # ===================================================
 # 🔥 H A K E E M   S T E G A N O G R A P H Y   T O O L
 # 👑 DEVELOPER: Hakeem Al-Arab
-# 🎯 VERSION: 6.6 - Universal Input Support
+# 🎯 VERSION: 7.1 - Cyber Hacker Edition + Clickable Links
 # 🌐 GITHUB: hakim738-html
-# 🌍 Languages: العربية / English
 # ===================================================
 
 # === COLORS ===
@@ -44,7 +43,6 @@ ensure_arabic_support() {
         if python3 -c "import arabic_reshaper; from bidi.algorithm import get_display" 2>/dev/null; then
             ARABIC_SUPPORT=1
         else
-            echo -e "${YELLOW}[*] Installing Arabic display support...${NC}"
             pip install --quiet arabic-reshaper python-bidi==0.4.2 --break-system-packages 2>/dev/null || true
             if python3 -c "import arabic_reshaper; from bidi.algorithm import get_display" 2>/dev/null; then
                 ARABIC_SUPPORT=1
@@ -78,21 +76,11 @@ except Exception:
     printf '%s' "$shaped"
 }
 
-# === 🆕 UNIVERSAL NUMBER CONVERTER (Accepts Arabic ٠١٢٣٤٥٦٧٨٩) ===
-normalize_num() {
-    python3 -c "
-import sys
-trans = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
-print(sys.argv[1].translate(trans), end='')
-" "$1"
-}
-
 # === MESSAGES ===
 declare -A MSG_AR MSG_EN
 
 MSG_AR=(
     [developer]="المطور: حكيم العرب"
-    [version]="الإصدار"
     [menu_title]="القائمة الرئيسية"
     [menu_hide]="إخفاء نص في صورة"
     [menu_extract]="استخراج نص مخفي من صورة"
@@ -106,14 +94,11 @@ MSG_AR=(
     [prompt_text]="أدخل النص المراد إخفاؤه"
     [prompt_output]="أدخل اسم الصورة الناتجة"
     [invalid_choice]="اختيار غير صالح"
-    [file_not_found]="الملف غير موجود"
-    [processing]="جاري المعالجة..."
+    [file_not_found]="الملف غير موجود، تأكد من المسار"
+    [processing]="جاري المعالجة"
     [success_hide]="تم إخفاء النص بنجاح"
     [success_extract]="تم استخراج النص بنجاح"
     [press_enter]="اضغط Enter للمتابعة..."
-    [checking_tools]="فحص الأدوات المطلوبة"
-    [tool_found]="موجودة"
-    [tool_missing]="غير موجودة"
     [backup_created]="تم إنشاء نسخة احتياطية"
     [no_hidden_text]="لا يوجد نص مخفي أو الصورة غير صالحة"
     [capacity_error]="حجم الصورة غير كافٍ لإخفاء هذا النص"
@@ -123,7 +108,7 @@ MSG_AR=(
     [goodbye]="إلى اللقاء"
     [empty_text]="النص فارغ"
     [empty_path]="لم تُدخل مساراً"
-    [report_gen]="جاري إنشاء تقرير HTML..."
+    [report_gen]="جاري إنشاء تقرير HTML"
     [report_created]="تم إنشاء تقرير HTML بنجاح"
     [report_location]="موقع التقرير"
     [analysis_done]="اكتمل التحليل"
@@ -132,7 +117,6 @@ MSG_AR=(
 
 MSG_EN=(
     [developer]="Developer: Hakeem Al-Arab"
-    [version]="Version"
     [menu_title]="Main Menu"
     [menu_hide]="Hide text in image"
     [menu_extract]="Extract hidden text from image"
@@ -146,14 +130,11 @@ MSG_EN=(
     [prompt_text]="Enter text to hide"
     [prompt_output]="Enter output image name"
     [invalid_choice]="Invalid choice"
-    [file_not_found]="File not found"
+    [file_not_found]="File not found, check the path"
     [processing]="Processing..."
     [success_hide]="Text hidden successfully"
     [success_extract]="Text extracted successfully"
     [press_enter]="Press Enter to continue..."
-    [checking_tools]="Checking required tools"
-    [tool_found]="found"
-    [tool_missing]="missing"
     [backup_created]="Backup created"
     [no_hidden_text]="No hidden text found or invalid image"
     [capacity_error]="Image is too small to hide this text"
@@ -163,7 +144,7 @@ MSG_EN=(
     [goodbye]="Goodbye"
     [empty_text]="Text is empty"
     [empty_path]="No path provided"
-    [report_gen]="Generating HTML report..."
+    [report_gen]="Generating HTML report"
     [report_created]="HTML report created"
     [report_location]="Report location"
     [analysis_done]="Analysis complete"
@@ -186,11 +167,44 @@ msg() {
 log_action() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 
 expand_path() {
-    local p="$1"
-    p=$(normalize_num "$p") # تحويل الأرقام العربية إلى إنجليزية
-    p="${p/#\~/$HOME}"
-    p="${p/#\$HOME/$HOME}"
-    echo "$p"
+    local raw="$1"
+    
+    # 1. Remove invisible control characters (RTL, LTR marks) that confuse bash
+    local clean=$(python3 -c "
+import sys
+import unicodedata
+print(''.join(c for c in sys.argv[1] if unicodedata.category(c) != 'Cf').strip(), end='')
+" "$raw")
+    
+    clean="${clean/#\~/$HOME}"
+    clean="${clean/#\$HOME/$HOME}"
+
+    # 2. Try exact match (accepts Arabic numbers and letters natively)
+    if [ -f "$clean" ]; then echo "$clean"; return; fi
+    
+    # 3. Try converting Arabic numbers to English (just in case)
+    local en=$(python3 -c "
+import sys
+import unicodedata
+text = ''.join(c for c in sys.argv[1] if unicodedata.category(c) != 'Cf')
+trans = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+print(text.translate(trans).strip(), end='')
+" "$raw")
+    
+    en="${en/#\~/$HOME}"
+    en="${en/#\$HOME/$HOME}"
+    
+    if [ -f "$en" ]; then echo "$en"; return; fi
+
+    # 4. Smart search: find the file in the directory ignoring format differences
+    local dir=$(dirname "$clean")
+    local base=$(basename "$clean")
+    if [ -d "$dir" ]; then
+        local match=$(find "$dir" -maxdepth 1 -name "$base" -o -name "$(basename "$en")" 2>/dev/null | head -1)
+        if [ -n "$match" ]; then echo "$match"; return; fi
+    fi
+
+    echo "$clean"
 }
 
 get_download_dir() {
@@ -200,47 +214,35 @@ get_download_dir() {
     else mkdir -p "$HOME/Downloads"; echo "$HOME/Downloads"; fi
 }
 
-# === BANNER ===
+# === CYBER BANNER (Skull + Name) ===
 show_banner() {
     clear
-    echo -e "${RED}"
-    echo "╔══════════════════════════════════════════════════════╗"
-    echo "║   ██╗  ██╗ █████╗ ██╗  ██╗███████╗███████╗███╗   ███╗║"
-    echo "║   ██║  ██║██╔══██╗██║ ██╔╝██╔════╝██╔════╝████╗ ████║║"
-    echo "║   ███████║███████║█████╔╝ █████╗  █████╗  ██╔████╔██║║"
-    echo "║   ██╔══██║██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ██║╚██╔╝██║║"
-    echo "║   ██║  ██║██║  ██║██║  ██╗███████╗███████╗██║ ╚═╝ ██║║"
-    echo "║   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝     ╚═╝║"
-    echo "║      🔥 IMAGE STEGANOGRAPHY & FORENSICS TOOL 🔥     ║"
-    echo "╚══════════════════════════════════════════════════════╝"
-    echo -e "${NC}${CYAN}┌────────────────────────────────────────────────────┐${NC}"
-    printf "${CYAN}│  👑 %-48s│${NC}\n" "$(msg developer)"
-    printf "${CYAN}│  🌐 %-48s│${NC}\n" "GitHub: hakim738-html"
-    printf "${CYAN}│  🎯 %-48s│${NC}\n" "$(msg version): 6.6"
-    printf "${CYAN}│  🌍 %-48s│${NC}\n" "Lang: $LANG_CHOICE"
-    echo -e "${CYAN}└────────────────────────────────────────────────────┘${NC}"
-    echo ""
+    echo -e "${GREEN}${BOLD}"
+    cat << 'EOF'
+    ╔═════════════════════════════════════════════════════════════╗
+    ║    .-"""""-.                                                ║
+    ║   /  .-. .-.  \     ██╗  ██╗ █████╗ ██╗  ██╗███████╗       ║
+    ║  |  ( @ ) ( @ )  |  ██║  ██║██╔══██╗██║ ██╔╝██╔════╝       ║
+    ║  |    `-'   `-'    | ███████║███████║█████╔╝ █████╗        ║
+    ║  |       / \       | ██╔══██║██╔══██║██╔═██╗ ██╔══╝        ║
+    ║   \     /   \     /  ██║  ██║██║  ██║██║  ██╗███████╗      ║
+    ║    '.  /     \  .'   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝      ║
+    ║      '-..___..-'                                           ║
+    ║                                                            ║
+    ║           👑 Hakeem Al-Arab  |  🎯 v7.1 Cyber Edition      ║
+    ╠════════════════════════════════════════════════════════════╣
+EOF
+    echo -e "${NC}"
 }
 
-# === TOOL CHECK ===
+# === TOOL CHECK (Silent) ===
 check_tools() {
-    echo -e "${CYAN}[*] $(msg checking_tools)...${NC}"
     local missing=()
     for tool in exiftool python3 file; do
-        if ! command -v "$tool" &>/dev/null; then
-            missing+=("$tool")
-            echo -e "${YELLOW}[!] $tool: $(msg tool_missing)${NC}"
-        else
-            echo -e "${GREEN}[✓] $tool: $(msg tool_found)${NC}"
-        fi
+        if ! command -v "$tool" &>/dev/null; then missing+=("$tool"); fi
     done
     if command -v python3 &>/dev/null; then
-        if ! python3 -c "from PIL import Image" 2>/dev/null; then
-            missing+=("pillow")
-            echo -e "${YELLOW}[!] Pillow: $(msg tool_missing)${NC}"
-        else
-            echo -e "${GREEN}[✓] Pillow: $(msg tool_found)${NC}"
-        fi
+        if ! python3 -c "from PIL import Image" 2>/dev/null; then missing+=("pillow"); fi
     fi
     if [ ${#missing[@]} -gt 0 ]; then
         pkg update -y >/dev/null 2>&1
@@ -356,7 +358,7 @@ extract_text_menu() {
     fi
 }
 
-# === HTML REPORT ===
+# === HTML REPORT (UPDATED: Clickable Link) ===
 create_html_report() {
     local img_path="$1"
     echo -e "${YELLOW}[*] $(msg report_gen)...${NC}"
@@ -365,25 +367,32 @@ create_html_report() {
     local md5=$(md5sum "$img_path" | cut -d' ' -f1)
     local sha=$(sha256sum "$img_path" | cut -d' ' -f1)
     
+    # إنشاء رابط file:// لفتح الصورة
+    local file_url="file://$img_path"
+    
     cat > "$html_file" << HTMLEOF
 <!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <title>Hakeem Report</title>
 <style>
-body{font-family:Tahoma, sans-serif;background:#0d1117;color:#fff;padding:20px;line-height:1.6}
-h1{color:#f0883e;text-align:center}.box{background:#161b22;padding:20px;border-radius:8px;margin-bottom:20px;border:1px solid #30363d}
-pre{background:#000;padding:15px;overflow:auto;direction:ltr;text-align:left;border-radius:6px;color:#58a6ff}
-.label{color:#8b949e;font-size:0.9em}
+body{font-family:'Segoe UI', Tahoma, sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;line-height:1.6}
+h1{color:#58a6ff;text-align:center;text-shadow:0 0 10px rgba(88,166,255,0.5)}
+.box{background:#161b22;padding:20px;border-radius:8px;margin-bottom:20px;border:1px solid #30363d;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
+pre{background:#000;padding:15px;overflow:auto;direction:ltr;text-align:left;border-radius:6px;color:#7ee787;border:1px solid #30363d}
+.label{color:#8b949e;font-weight:bold}
+/* تنسيق الرابط القابل للنقر */
+.file-link{color:#58a6ff;text-decoration:none;word-break:break-all;font-weight:bold;transition:0.3s;border-bottom:1px dashed #58a6ff;}
+.file-link:hover{color:#79c0ff;text-shadow:0 0 8px #79c0ff;border-bottom:1px solid #79c0ff;}
 </style></head>
 <body>
 <h1>🔥 تقرير تحليل الصورة - Hakeem Stego</h1>
 <div class="box">
-<p><span class="label">الملف:</span> $img_path</p>
+<p><span class="label">الملف:</span> <a href="$file_url" target="_blank" class="file-link">$img_path</a></p>
 <p><span class="label">التاريخ:</span> $(date)</p>
 <p><span class="label">MD5:</span> $md5</p>
 <p><span class="label">SHA256:</span> $sha</p>
 </div>
 <div class="box">
-<h3>بيانات EXIF الكاملة:</h3>
+<h3 style="color:#58a6ff;">بيانات EXIF الكاملة:</h3>
 <pre>$exif_raw</pre>
 </div>
 </body></html>
@@ -458,20 +467,23 @@ initial_language_select() {
     printf '%s' "$LANG_CHOICE" > "$LANG_FILE"
 }
 
-# === MAIN MENU ===
+# === MAIN MENU (Cyber Prompt) ===
 main_menu() {
     while true; do
         show_banner
-        echo -e "${CYAN}═══ $(msg menu_title) ═══${NC}"
-        echo -e "${GREEN}[1]${NC} $(msg menu_hide)"
-        echo -e "${GREEN}[2]${NC} $(msg menu_extract)"
-        echo -e "${GREEN}[3]${NC} $(msg menu_exif) ${YELLOW}→ HTML${NC}"
-        echo -e "${GREEN}[4]${NC} $(msg menu_forensic) ${YELLOW}→ HTML${NC}"
-        echo -e "${GREEN}[5]${NC} $(msg menu_logs)"
-        echo -e "${GREEN}[6]${NC} $(msg menu_lang)"
-        echo -e "${RED}[0]${NC} $(msg menu_exit)"
+        echo -e "    ║  ${GREEN}[1]${NC} $(msg menu_hide)"
+        echo -e "    ║  ${GREEN}[2]${NC} $(msg menu_extract)"
+        echo -e "    ║  ${GREEN}[3]${NC} $(msg menu_exif)"
+        echo -e "    ║  ${GREEN}[4]${NC} $(msg menu_forensic)"
+        echo -e "    ║  ${GREEN}[5]${NC} $(msg menu_logs)"
+        echo -e "    ║  ${GREEN}[6]${NC} $(msg menu_lang)"
+        echo -e "    ║  ${RED}[0]${NC} $(msg menu_exit)"
+        echo -e "    ╚════════════════════════════════════════════════════════════╝"
         echo ""
-        read -r -p "$(msg prompt_choice): " choice
+        
+        read -r -p "${GREEN}    ┌──(${RED}root㉿hakeem${GREEN})─[${CYAN}~${GREEN}]
+    └─${RED}\$${NC} " choice
+        
         case "$choice" in
             1) hide_text_menu; read -r -p "$(msg press_enter)" ;;
             2) extract_text_menu; read -r -p "$(msg press_enter)" ;;
