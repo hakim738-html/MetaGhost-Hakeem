@@ -2,7 +2,7 @@
 # ═════════════════════════════════════════════════════════════════
 # 🔥 H A K E E M   S T E G A N O G R A P H Y   T O O L
 # 👑 DEVELOPER: Hakeem Al-Arab
-# 🎯 VERSION: 8.0 - Ultimate Cyber Edition
+# 🎯 VERSION: 8.1 - Ultimate Cyber Edition (Path-Fix Release)
 # 🌐 GITHUB: hakim738-html
 # ═════════════════════════════════════════════════════════════════
 
@@ -86,6 +86,7 @@ MSG_AR=(
     [prompt_output]="أدخل اسم الصورة الناتجة"
     [invalid]="اختيار غير صالح"
     [not_found]="❌ الملف غير موجود! تأكد من المسار"
+    [tried]="تم البحث في"
     [processing]="جاري المعالجة"
     [ok_hide]="✅ تم إخفاء النص بنجاح"
     [ok_extract]="✅ تم استخراج النص بنجاح"
@@ -125,6 +126,7 @@ MSG_EN=(
     [prompt_output]="Enter output image name"
     [invalid]="Invalid choice"
     [not_found]="❌ File not found"
+    [tried]="Searched at"
     [processing]="Processing"
     [ok_hide]="✅ Text hidden successfully"
     [ok_extract]="✅ Text extracted successfully"
@@ -192,60 +194,133 @@ get_download_dir() {
 
 # ─── PYTHON HELPERS ───
 create_python_helpers() {
-    # ── Path resolver (robust Unicode) ──
-    cat > "$BASE_DIR/path_resolver.py" << 'PYEOF'
-#!/usr/bin/env python3
-import sys, os
-from pathlib import Path
-import unicodedata
 
-def resolve(raw):
-    if not raw: return ""
-    # Remove zero-width / format chars
-    clean = ''.join(c for c in raw if unicodedata.category(c) != 'Cf').strip()
-    clean = clean.strip("'\"").strip()
-    clean = os.path.expanduser(clean)
-    # Arabic-Indic digits → ASCII
-    clean = clean.translate(str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789'))
-    # Try direct
-    if os.path.isfile(clean):
-        return clean
-    # Try NFC / NFD normalization
+# ═══════════════════════════════════════════════════════════════════
+# PATH RESOLVER v8.1 — يحاول المسار الأصلي أولاً (قبل تحويل الأرقام)
+# ═══════════════════════════════════════════════════════════════════
+cat > "$BASE_DIR/path_resolver.py" <<'PYEOF'
+#!/usr/bin/env python3
+import sys, os, unicodedata
+
+AR2EN = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+EN2AR = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+FA2EN = str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')
+
+def clean_str(s):
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Cf')
+    s = s.strip().strip("'\"").strip()
+    return os.path.expanduser(s)
+
+def nfc(s):
+    return unicodedata.normalize('NFC', s)
+
+def try_isfile(p):
+    if os.path.isfile(p):
+        return p
     for form in ('NFC', 'NFD'):
-        alt = unicodedata.normalize(form, clean)
+        alt = unicodedata.normalize(form, p)
         if os.path.isfile(alt):
             return alt
-    # Fuzzy search
+    return None
+
+def resolve(raw):
+    if not raw:
+        return ""
+    clean = clean_str(raw)
+    if not clean:
+        return ""
+
+    # 1) جرّب المسار الأصلي حرفياً أولاً
+    hit = try_isfile(clean)
+    if hit: return hit
+
+    # 2) جرّب كل تركيبة تحويل أرقام
+    candidates = []
+    for conv in (AR2EN, EN2AR, FA2EN):
+        c = clean.translate(conv)
+        if c != clean:
+            candidates.append(c)
+    for cand in candidates:
+        hit = try_isfile(cand)
+        if hit: return hit
+
+    # 3) بحث ضمني داخل مجلد الملف نفسه
     base = os.path.basename(clean)
-    if base:
-        search_dirs = [
-            os.path.expanduser('~/storage/downloads'),
-            os.path.expanduser('~/storage/pictures'),
-            os.path.expanduser('~/storage/dcim'),
-            '/sdcard/Download', '/sdcard/Pictures', '/sdcard/DCIM',
-            os.path.expanduser('~/Downloads'),
-            os.path.expanduser('~/Pictures'),
-            os.path.expanduser('~/Desktop'),
-            os.path.expanduser('~'),
-        ]
-        base_norm = unicodedata.normalize('NFC', base)
-        for d in search_dirs:
-            if not os.path.isdir(d): continue
-            try:
-                for entry in os.listdir(d):
-                    if unicodedata.normalize('NFC', entry) == base_norm:
-                        full = os.path.join(d, entry)
-                        if os.path.isfile(full): return full
-            except Exception:
-                continue
+    dir_part = os.path.dirname(clean)
+    basenames = {base, base.translate(AR2EN), base.translate(EN2AR), base.translate(FA2EN)}
+    basenames_nfc = {nfc(b) for b in basenames}
+
+    if dir_part and os.path.isdir(dir_part):
+        try:
+            for entry in os.listdir(dir_part):
+                if entry in basenames or nfc(entry) in basenames_nfc:
+                    return os.path.join(dir_part, entry)
+        except Exception:
+            pass
+
+    # 4) بحث في مجلدات معروفة
+    search_dirs = [
+        dir_part,
+        '/storage/emulated/0/DCIM/Camera',
+        '/storage/emulated/0/DCIM',
+        '/storage/emulated/0/Pictures',
+        '/storage/emulated/0/Pictures/Screenshots',
+        '/storage/emulated/0/Download',
+        '/storage/emulated/0/Downloads',
+        '/storage/emulated/0/WhatsApp/Media/WhatsApp Images',
+        '/sdcard/DCIM/Camera',
+        '/sdcard/DCIM',
+        '/sdcard/Pictures',
+        '/sdcard/Download',
+        '/sdcard/Downloads',
+        os.path.expanduser('~/storage/dcim/Camera'),
+        os.path.expanduser('~/storage/dcim'),
+        os.path.expanduser('~/storage/pictures'),
+        os.path.expanduser('~/storage/downloads'),
+        os.path.expanduser('~/Downloads'),
+        os.path.expanduser('~/Pictures'),
+        os.path.expanduser('~/Desktop'),
+        os.path.expanduser('~'),
+    ]
+    for d in search_dirs:
+        if not d or not os.path.isdir(d):
+            continue
+        try:
+            for entry in os.listdir(d):
+                if entry in basenames or nfc(entry) in basenames_nfc:
+                    full = os.path.join(d, entry)
+                    if os.path.isfile(full):
+                        return full
+        except Exception:
+            continue
+
+    # 5) بحث متداخل داخل DCIM (عمق 2)
+    deep_roots = ['/storage/emulated/0/DCIM', '/sdcard/DCIM',
+                  os.path.expanduser('~/storage/dcim')]
+    for root in deep_roots:
+        if not os.path.isdir(root): continue
+        try:
+            for dirpath, dirnames, filenames in os.walk(root):
+                depth = dirpath[len(root):].count(os.sep)
+                if depth > 2:
+                    dirnames[:] = []
+                    continue
+                for entry in filenames:
+                    if entry in basenames or nfc(entry) in basenames_nfc:
+                        return os.path.join(dirpath, entry)
+        except Exception:
+            continue
+
     return clean
 
 if __name__ == '__main__':
     print(resolve(sys.argv[1] if len(sys.argv) > 1 else ''))
 PYEOF
 
-    # ── Image analyzer (deep pixel/color analysis) ──
-    cat > "$BASE_DIR/image_analyzer.py" << 'PYEOF'
+# ═══════════════════════════════════════════════════════════════════
+# IMAGE ANALYZER — تحليل بكسلات وألوان عميق
+# ═══════════════════════════════════════════════════════════════════
+cat > "$BASE_DIR/image_analyzer.py" <<'PYEOF'
 #!/usr/bin/env python3
 import sys, os, json
 from PIL import Image, ImageStat, ImageFilter
@@ -262,16 +337,13 @@ def analyze(path):
         out['megapixels'] = round(img.width * img.height / 1_000_000, 2)
         out['total_pixels'] = img.width * img.height
 
-        # Aspect ratio
         from math import gcd
         g = gcd(img.width, img.height)
         out['aspect_ratio'] = f"{img.width//g}:{img.height//g}"
 
-        # DPI
         dpi = img.info.get('dpi')
         out['dpi'] = f"{dpi[0]}x{dpi[1]}" if dpi else 'N/A'
 
-        # RGB Analysis
         try:
             rgb = img.convert('RGB')
             small = rgb.resize((64, 64))
@@ -289,9 +361,6 @@ def analyze(path):
 
             stat = ImageStat.Stat(rgb)
             out['avg_rgb'] = ','.join(str(round(x)) for x in stat.mean)
-            out['avg_r']   = round(stat.mean[0])
-            out['avg_g']   = round(stat.mean[1])
-            out['avg_b']   = round(stat.mean[2])
             brightness = sum(stat.mean) / 3
             out['brightness'] = round(brightness, 2)
             out['brightness_level'] = (
@@ -305,7 +374,6 @@ def analyze(path):
                 'Normal' if contrast < 60 else 'High'
             )
 
-            # Sharpness (edge detection)
             try:
                 edges = rgb.filter(ImageFilter.FIND_EDGES)
                 est = ImageStat.Stat(edges)
@@ -318,7 +386,6 @@ def analyze(path):
             except Exception:
                 pass
 
-            # ASCII Preview (small)
             try:
                 preview = rgb.convert('L').resize((50, 25))
                 chars = ' .:-=+*#%@'
@@ -336,7 +403,6 @@ def analyze(path):
         except Exception as e:
             out['analysis_error'] = str(e)
 
-        # Exif sub-blocks
         try:
             exif = img.getexif()
             if exif:
@@ -353,8 +419,10 @@ if __name__ == '__main__':
     analyze(sys.argv[1])
 PYEOF
 
-    # ── Stego helper ──
-    cat > "$BASE_DIR/stego_helper.py" << 'PYEOF'
+# ═══════════════════════════════════════════════════════════════════
+# STEGO HELPER — إخفاء/استخراج LSB
+# ═══════════════════════════════════════════════════════════════════
+cat > "$BASE_DIR/stego_helper.py" <<'PYEOF'
 #!/usr/bin/env python3
 import sys
 from PIL import Image
@@ -431,7 +499,7 @@ check_tools() {
 show_banner() {
     clear
     echo -e "${GREEN}${BOLD}"
-    cat << 'EOF'
+    cat <<'EOF'
     ╔═══════════════════════════════════════════════════════════════════╗
     ║   ██╗  ██╗ █████╗ ██╗  ██╗███████╗███████╗███╗   ███╗             ║
     ║   ██║  ██║██╔══██╗██║ ██╔╝██╔════╝██╔════╝████╗ ████║             ║
@@ -440,7 +508,7 @@ show_banner() {
     ║   ██║  ██║██║  ██║██║  ██╗███████╗███████╗██║ ╚═╝ ██║             ║
     ║   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝     ╚═╝             ║
     ║                                                                   ║
-    ║   👑 Hakeem Al-Arab  |  🎯 v8.0 Ultimate Cyber Edition           ║
+    ║   👑 Hakeem Al-Arab  |  🎯 v8.1 Ultimate Cyber Edition           ║
     ║   🔥 Steganography · EXIF · Forensics · HTML Dashboard            ║
     ╠═══════════════════════════════════════════════════════════════════╣
 EOF
@@ -465,7 +533,6 @@ try:
         print(f'{k}\t{v}')
 except Exception: pass
 " "$json" 2>/dev/null)
-    # Save palette & ascii separately
     echo "$json" | python3 -c "
 import json, sys
 try:
@@ -487,7 +554,11 @@ hide_text_menu() {
     [ -z "$raw" ] && { echo -e "${RED}[✗] $(msg empty_path)${NC}"; return; }
     local path
     path=$(python3 "$BASE_DIR/path_resolver.py" "$raw")
-    [ ! -f "$path" ] && { echo -e "${RED}[✗] $(msg not_found): $path${NC}"; return; }
+    if [ ! -f "$path" ]; then
+        echo -e "${RED}[✗] $(msg not_found)${NC}"
+        echo -e "${DIM}   $(msg tried): $path${NC}"
+        return
+    fi
     echo -e "${GREEN}[✓] $(msg found): $path${NC}"
 
     cp "$path" "$BACKUP_DIR/$(basename "$path").$(date +%s).bak" 2>/dev/null
@@ -517,7 +588,11 @@ extract_text_menu() {
     read -r -p "$(msg prompt_image): " raw
     local path
     path=$(python3 "$BASE_DIR/path_resolver.py" "$raw")
-    [ ! -f "$path" ] && { echo -e "${RED}[✗] $(msg not_found): $path${NC}"; return; }
+    if [ ! -f "$path" ]; then
+        echo -e "${RED}[✗] $(msg not_found)${NC}"
+        echo -e "${DIM}   $(msg tried): $path${NC}"
+        return
+    fi
 
     local result
     (result=$(python3 "$BASE_DIR/stego_helper.py" extract "$path" 2>&1); echo "$result" > "$BASE_DIR/.extract_result") &
@@ -592,12 +667,14 @@ print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$img_path" 2>
     local avg_rgb="${IMG_INFO[avg_rgb]:-?}"
     local file_size="${IMG_INFO[file_size]:-0}"
 
-    local size_h
+    local size_h bright_pct contrast_pct
     size_h=$(python3 -c "
 s=int(sys.argv[1])
 for u in ['B','KB','MB','GB']:
     if s < 1024: print(f'{s:.1f} {u}'); break
     s/=1024" "$file_size" 2>/dev/null)
+    bright_pct=$(python3 -c "print(min(100,int(float('${brightness}')/255*100)))" 2>/dev/null || echo 0)
+    contrast_pct=$(python3 -c "print(min(100,int(float('${contrast}')/128*100)))" 2>/dev/null || echo 0)
 
     # ── Palette swatches ──
     local palette_html=""
@@ -646,7 +723,7 @@ for u in ['B','KB','MB','GB']:
     fi
 
     # ── Build HTML ──
-    cat > "$out_html" << HTMLEOF
+    cat > "$out_html" <<HTMLEOF
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -859,9 +936,9 @@ footer p{color:var(--muted);font-size:.9em;margin:4px 0}
     </div>
     <div style="margin-top:20px">
       <div class="data-label">مستوى الإضاءة: <strong>${brightness}/255</strong></div>
-      <div class="progress"><div class="progress-fill" style="width:$(python3 -c "print(min(100,int(float('${brightness}')/255*100)))")%"></div></div>
+      <div class="progress"><div class="progress-fill" style="width:${bright_pct}%"></div></div>
       <div class="data-label">مستوى التباين: <strong>${contrast}</strong></div>
-      <div class="progress"><div class="progress-fill" style="width:$(python3 -c "print(min(100,int(float('${contrast}')/128*100)))")%"></div></div>
+      <div class="progress"><div class="progress-fill" style="width:${contrast_pct}%"></div></div>
     </div>
   </div>
 
@@ -890,7 +967,7 @@ footer p{color:var(--muted);font-size:.9em;margin:4px 0}
 
   <footer>
     <div class="dev-badge">👑 المطور: حكيم العرب</div>
-    <p><strong>Hakeem Al-Arab — Cyber Forensics Suite v8.0</strong></p>
+    <p><strong>Hakeem Al-Arab — Cyber Forensics Suite v8.1</strong></p>
     <p>🌐 github.com/hakim738-html</p>
     <p>📁 المسار: <code style="color:var(--cyan)">$img_path</code></p>
     <p>🕐 تم التوليد: $(date '+%Y-%m-%d %H:%M:%S')</p>
@@ -905,7 +982,6 @@ HTMLEOF
     echo -e "${CYAN}$(msg report_loc):${NC} $out_html"
     log_action "HTML_REPORT: $out_html"
 
-    # Auto-open
     if command -v termux-open &>/dev/null; then
         sleep 1 && termux-open "$out_html" 2>/dev/null &
     elif command -v xdg-open &>/dev/null; then
@@ -920,7 +996,11 @@ exif_menu() {
     read -r -p "$(msg prompt_image): " raw
     local path
     path=$(python3 "$BASE_DIR/path_resolver.py" "$raw")
-    [ ! -f "$path" ] && { echo -e "${RED}[✗] $(msg not_found): $path${NC}"; return; }
+    if [ ! -f "$path" ]; then
+        echo -e "${RED}[✗] $(msg not_found)${NC}"
+        echo -e "${DIM}   $(msg tried): $path${NC}"
+        return
+    fi
     echo -e "${GREEN}[✓] $(msg found)${NC}"
 
     exiftool "$path" 2>/dev/null | head -60 || file "$path"
@@ -935,7 +1015,11 @@ forensic_menu() {
     read -r -p "$(msg prompt_image): " raw
     local path
     path=$(python3 "$BASE_DIR/path_resolver.py" "$raw")
-    [ ! -f "$path" ] && { echo -e "${RED}[✗] $(msg not_found)${NC}"; return; }
+    if [ ! -f "$path" ]; then
+        echo -e "${RED}[✗] $(msg not_found)${NC}"
+        echo -e "${DIM}   $(msg tried): $path${NC}"
+        return
+    fi
 
     exiftool "$path" 2>/dev/null
     create_html_report "$path"
@@ -1023,8 +1107,7 @@ main_menu() {
         echo -e "    ║   ${RED}[0]${NC} ❌   $(msg exit)"
         echo -e "    ╚═══════════════════════════════════════════════════════════════════╝"
         echo
-        read -r -p "${GREEN}    ┌──(${RED}root㉿hakeem${GREEN})─[${CYAN}~${GREEN}]
-    └─${RED}\$${NC} " choice
+        read -r -p "${GREEN}    ┌──(${RED}root㉿hakeem${GREEN})─[${CYAN}~${GREEN}]"$'\n'"    └─${RED}\$${NC} " choice
 
         case "$choice" in
             1) hide_text_menu;        read -r -p "$(msg press_enter)" _ ;;
